@@ -1,7 +1,7 @@
 export default function UserTopbar({ query, setQuery, status, setStatus }) {
   return (
     <div className="user-topbar">
-      <div className="user-topbar-left">
+      <div>
         <div className="user-topbar-title">Dashboard</div>
         <div className="user-topbar-sub">
           Welcome back! Here's your ticket overview.
@@ -9,14 +9,12 @@ export default function UserTopbar({ query, setQuery, status, setStatus }) {
       </div>
 
       <div className="user-topbar-right">
-        <div className="user-search-wrap">
-          <input
-            className="user-search"
-            placeholder="Search tickets..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        <input
+          className="user-search"
+          placeholder="Search tickets..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
 
         <select
           className="user-filter"

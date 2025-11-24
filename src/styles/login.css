@@ -39,8 +39,8 @@
 .auth-logo {
   width: 70px;
   height: 70px;
-  border-radius: 50%;
-  background-color: #0a9e4b; /* nanti ganti dengan gambar logo */
+  border-radius: 20%;
+  background-image: url('../assets/logo.png');
   background-size: cover;
   background-position: center;
 }

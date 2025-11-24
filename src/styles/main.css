@@ -8,7 +8,7 @@
 }
 
 body {
-  background-color: #fffbfb;
+  background-color: #ffffff;
 }
 
 .app {
@@ -45,11 +45,11 @@ body {
   gap: 12px;
 }
 
-.navbar-logo {
-  width: 50px;
-  height: 50px;
-  background: #0a9e4b;
-  border-radius: 50%;
+.brand-logo {
+  height: 42px;     /* tinggi logo */
+  width: auto;      /* biar otomatis ngikut lebar gambar */
+  object-fit: contain;
+  display: block;
 }
 
 .navbar-title {
@@ -96,7 +96,7 @@ body {
 .page-container {
   width: 90%;
   max-width: 1100px;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
   border-radius: 4px;
   padding: 40px 40px 20px;
   display: flex;

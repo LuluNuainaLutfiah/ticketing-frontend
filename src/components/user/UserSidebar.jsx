@@ -17,28 +17,24 @@ export default function UserSidebar({ active = "dashboard" }) {
         <div className="user-brand-text">
           <div className="user-brand-title">IT Helpdesk</div>
           <div className="user-brand-sub">technical support portal</div>
-        </div>
+        </div>  
       </div>
 
       <nav className="user-nav">
         <Link to="/user" className={item("dashboard")}>
-          <span className="dot dot-green" />
-          Dashboard
+          <span className="user-nav-ico">⬛</span> Dashboard
         </Link>
 
         <Link to="/user/tickets" className={item("tickets")}>
-          <span className="dot dot-gray" />
-          My Tickets
+          <span className="user-nav-ico">📄</span> My Tickets
         </Link>
 
         <Link to="/user/create" className={item("create")}>
-          <span className="dot dot-gray" />
-          Create Ticket
+          <span className="user-nav-ico">➕</span> Create Ticket
         </Link>
 
         <Link to="/user/profile" className={item("profile")}>
-          <span className="dot dot-gray" />
-          Profile
+          <span className="user-nav-ico">👤</span> Profile
         </Link>
       </nav>
 

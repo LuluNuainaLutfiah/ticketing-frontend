@@ -5,17 +5,21 @@ import "./styles/main.css";
 
 export default function App() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  // sembunyikan navbar/footer untuk halaman dashboard (admin & user)
+  const hideLayout =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/user");
 
   return (
     <div className="app">
-      {!isAdminRoute && <Navbar />}
+      {!hideLayout && <Navbar />}
 
       <main className="app-content">
         <Outlet />
       </main>
 
-      {!isAdminRoute && <Footer />}
+      {!hideLayout && <Footer />}
     </div>
   );
 }
