@@ -1,0 +1,170 @@
+/* ===================== */
+/* AUTH PAGES (LOGIN/REGISTER) */
+/* ===================== */
+
+.auth-page {
+  background-color: transparent; /* biar kelihatan frame hitam di luar */
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* area abu-abu besar di tengah (seperti di gambar) */
+.auth-bg {
+  width: 100%;
+  max-width: 900px;
+
+  padding: 70px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* card putih */
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+  background-color: #ffffff;
+  border-radius: 18px;
+  padding: 24px 32px 28px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+}
+
+/* logo bulat di atas */
+.auth-logo-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.auth-logo {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #0a9e4b; /* nanti ganti dengan gambar logo */
+  background-size: cover;
+  background-position: center;
+}
+
+/* judul di tengah */
+.auth-title-centered {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 22px;
+}
+
+/* tulisan kecil di atas form (Register, Login) */
+.auth-small-title-top {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+/* form */
+.auth-form-group {
+  margin-bottom: 14px;
+}
+
+.auth-label {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: #444;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 12px;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.16);
+}
+
+/* row remember & lupa password */
+.auth-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #444;
+}
+
+.auth-remember input {
+  width: 12px;
+  height: 12px;
+}
+
+.auth-link-small {
+  font-size: 11px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+/* tombol hijau */
+.auth-btn {
+  width: 100%;
+  padding: 9px 0;
+  border-radius: 999px;
+  border: none;
+  background-color: #16a34a;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.auth-btn:hover {
+  background-color: #15803d;
+}
+
+/* kotak abu-abu di bawah tombol */
+.auth-bottom-box {
+  margin-top: 4px;
+  background-color: #f3f3f3;
+  border-radius: 6px;
+  padding: 10px 10px;
+  font-size: 11px;
+  color: #555;
+  text-align: center;
+}
+
+.auth-bottom-box a {
+  color: #16a34a;
+  text-decoration: none;
+}
+
+/* error message */
+.auth-error {
+  font-size: 11px;
+  color: #dc2626;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* buat register & login responsif */
+@media (max-width: 600px) {
+  .auth-bg {
+    max-width: 100%;
+    margin: 0 12px;
+    padding: 40px 0;
+  }
+
+  .auth-card {
+    padding: 20px 20px 22px;
+  }
+}

@@ -1,16 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import App from "./App";
+import AppRouter from "./router";
 
-// CSS global
-import "./styles/auth.css";
-import "./styles/home.css";
+import "./styles/main.css";
+import "./styles/login.css";
+import "./styles/admin.css";
+import "./styles/user-dashboard.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <AppRouter />
   </React.StrictMode>
 );

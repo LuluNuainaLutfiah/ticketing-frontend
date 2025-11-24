@@ -1,14 +1,21 @@
-import { Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import { Outlet, useLocation } from "react-router-dom";
+import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
+import "./styles/main.css";
 
 export default function App() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />          {/* halaman awal */}
-      <Route path="/login" element={<Login />} />    {/* login */}
-      <Route path="/register" element={<Register />} /> {/* register */}
-    </Routes>
+    <div className="app">
+      {!isAdminRoute && <Navbar />}
+
+      <main className="app-content">
+        <Outlet />
+      </main>
+
+      {!isAdminRoute && <Footer />}
+    </div>
   );
 }
