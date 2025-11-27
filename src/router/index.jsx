@@ -6,6 +6,8 @@ import Register from "../pages/Register";
 import AdminDashboard from "../pages/AdminDashboard";
 import UserDashboard from "../pages/UserDashboard";
 import UserTicketDetail from "../pages/UserTicketDetail"; 
+import AdminTickets from "../pages/AdminTickets";
+import AdminActivity from "../pages/AdminActivity";
 
 export default function AppRouter() {
   return (
@@ -18,6 +20,8 @@ export default function AppRouter() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/user" element={<UserDashboard />} />
           <Route path="/user/tickets/:id" element={<UserTicketDetail />} />
+          <Route path="/admin/tickets" element={<AdminTickets />} />
+          <Route path="/admin/activity" element={<AdminActivity />} />
         </Route>
       </Routes>
     </BrowserRouter>

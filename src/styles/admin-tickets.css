@@ -1,0 +1,328 @@
+/* ==== LAYOUT DASAR ADMIN (berpengaruh ke semua halaman admin) ==== */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f5f7;
+}
+
+.admin-sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+}
+
+.admin-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.user-brand {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.admin-sidebar-brandtext .brand-main {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.admin-sidebar-brandtext .brand-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* menu di sidebar */
+.admin-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.admin-menu-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-menu-item:hover:not(.active) {
+  background-color: #f3f4f6;
+}
+
+.admin-menu-item.active {
+  background-color: #16a34a;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* tombol logout di bawah sidebar */
+.admin-logout {
+  margin-top: 24px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.admin-logout:hover {
+  background-color: #f3f4f6;
+}
+
+/* area konten kanan */
+.admin-main {
+  flex: 1;
+}
+
+/* ==== LAYOUT KHUSUS HALAMAN TICKETS ==== */
+
+.tickets-layout .admin-main {
+  padding: 24px 32px;
+  background-color: #f4f5f7;
+}
+
+/* wrapper konten */
+.tickets-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* header atas: judul + search */
+.tickets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tickets-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tickets-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.tickets-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* search bar */
+.tickets-search {
+  position: relative;
+}
+
+.tickets-search input {
+  padding: 8px 32px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  outline: none;
+  min-width: 220px;
+  background-color: #ffffff;
+}
+
+.tickets-search input:focus {
+  border-color: #2563eb;
+}
+
+.tickets-search .search-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* card besar */
+.tickets-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+/* header card */
+.tickets-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tickets-card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tickets-card-header p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* filter chips */
+.tickets-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  padding: 6px 12px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.filter-chip .dot.open {
+  background-color: #3b82f6;
+}
+
+.filter-chip .dot.in-progress {
+  background-color: #f59e0b;
+}
+
+.filter-chip .dot.closed {
+  background-color: #10b981;
+}
+
+.filter-chip:hover {
+  background-color: #f3f4f6;
+}
+
+.filter-chip.active {
+  border-color: #2563eb;
+  background-color: #e0ecff;
+}
+
+/* tabel */
+.tickets-table-wrapper {
+  overflow-x: auto;
+}
+
+.tickets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tickets-table thead tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tickets-table th,
+.tickets-table td {
+  padding: 10px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tickets-table th {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.tickets-table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.tickets-table tbody tr:hover {
+  background-color: #eef2ff;
+}
+
+.empty-row {
+  text-align: center;
+  padding: 24px 0;
+  color: #6b7280;
+}
+
+/* judul tiket sebagai link */
+.ticket-title-cell .link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.ticket-title-cell .link-button:hover {
+  text-decoration: underline;
+}
+
+/* badge priority & status */
+.priority-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.priority-badge.high {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.priority-badge.medium {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.priority-badge.low {
+  background-color: #e0f2fe;
+  color: #1d4ed8;
+}
+
+.status-badge.open {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge.in-progress {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.closed {
+  background-color: #dcfce7;
+  color: #166534;
+}

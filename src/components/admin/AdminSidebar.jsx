@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 
 export default function AdminSidebar({ active = "overview" }) {
@@ -15,8 +15,8 @@ export default function AdminSidebar({ active = "overview" }) {
 
   return (
     <aside className="admin-sidebar">
+      {/* Brand */}
       <div className="admin-sidebar-brand">
-        <div className="admin-sidebar-logo" />
         <img src={logo} alt="Logo" className="user-brand" />
         <div className="admin-sidebar-brandtext">
           <div className="brand-main">IT Helpdesk</div>
@@ -24,12 +24,22 @@ export default function AdminSidebar({ active = "overview" }) {
         </div>
       </div>
 
+      {/* Menu */}
       <nav className="admin-menu">
-        <div className={itemClass("overview")}>Ringkasan</div>
-        <div className={itemClass("tickets")}>Tiket</div>
-        <div className={itemClass("activity")}>Log Aktivitas</div>
+        <Link to="/admin" className={itemClass("overview")}>
+          Ringkasan
+        </Link>
+
+        <Link to="/admin/tickets" className={itemClass("tickets")}>
+          Tiket
+        </Link>
+
+        <Link to="/admin/activity" className={itemClass("activity")}>
+          Log Aktivitas
+        </Link>
       </nav>
 
+      {/* Logout */}
       <button className="admin-logout" onClick={logout}>
         Logout
       </button>
