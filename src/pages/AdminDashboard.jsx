@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import AdminNavbar from "../components/admin/AdminNavbar";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin.css";
-import { fetchAdminTickets, fetchAdminActivities } from "../services/tickets";
+import { fetchAdminTickets } from "../services/tickets";
+import { fetchAdminActivities } from "../services/activity";
 
 export default function AdminDashboard() {
   const user = useMemo(() => {
@@ -22,7 +23,8 @@ export default function AdminDashboard() {
 
   const normalizeStatus = (s) => {
     const val = String(s || "").toLowerCase();
-    if (["in_progress", "on_progress", "progress"].includes(val)) return "progress";
+    if (["in_progress", "on_progress", "progress"].includes(val))
+      return "progress";
     if (["resolved", "closed", "done"].includes(val)) return "done";
     if (["pending"].includes(val)) return "pending";
     return "open";
@@ -64,16 +66,24 @@ export default function AdminDashboard() {
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
     return (
-      String(t.id ?? "").toLowerCase().includes(q) ||
-      String(t.title ?? t.subject ?? "").toLowerCase().includes(q) ||
-      String(t.assignee?.name ?? t.assignee ?? "").toLowerCase().includes(q)
+      String(t.id ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(t.title ?? t.subject ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(t.assignee?.name ?? t.assignee ?? "")
+        .toLowerCase()
+        .includes(q)
     );
   });
 
   const stats = {
     total: tickets.length,
-    pending: tickets.filter((t) => normalizeStatus(t.status) === "pending").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
+    pending: tickets.filter((t) => normalizeStatus(t.status) === "pending")
+      .length,
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
+      .length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
 
@@ -146,14 +156,19 @@ export default function AdminDashboard() {
                     const st = normalizeStatus(t.status);
                     const priority = String(t.priority || "Low");
                     const assignee =
-                      t.assignee?.name ?? t.assignee ?? t.assigned_to ?? "Unassigned";
+                      t.assignee?.name ??
+                      t.assignee ??
+                      t.assigned_to ??
+                      "Unassigned";
 
                     return (
                       <tr key={t.id}>
                         <td>{t.id}</td>
                         <td>{t.title ?? t.subject ?? "-"}</td>
                         <td>
-                          <span className={`priority ${priority.toLowerCase()}`}>
+                          <span
+                            className={`priority ${priority.toLowerCase()}`}
+                          >
                             {priority}
                           </span>
                         </td>

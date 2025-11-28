@@ -1,8 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import logo from "../../assets/logo.png";
 
 export default function UserSidebar({ active = "dashboard" }) {
   const navigate = useNavigate();
-  const item = (key) => `user-nav-item ${active === key ? "active" : ""}`;
+
+  const itemClass = (key) =>
+    `user-menu-item ${active === key ? "active" : ""}`;
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -12,35 +15,54 @@ export default function UserSidebar({ active = "dashboard" }) {
 
   return (
     <aside className="user-sidebar">
-      <div className="user-brand">
-        <div className="user-brand-logo" />
-        <div className="user-brand-text">
-          <div className="user-brand-title">IT Helpdesk</div>
+      
+      {/* BRAND */}
+      <div className="user-sidebar-brand">
+        <img src={logo} className="user-sidebar-logo" alt="Logo" />
+
+        <div className="user-sidebar-brandtext">
+          <div className="user-brand-main">IT Helpdesk</div>
           <div className="user-brand-sub">technical support portal</div>
-        </div>  
+        </div>
       </div>
 
-      <nav className="user-nav">
-        <Link to="/user" className={item("dashboard")}>
-          <span className="user-nav-ico">⬛</span> Dashboard
-        </Link>
+      {/* MENU LIST */}
+      <nav className="user-menu">
 
-        <Link to="/user/tickets" className={item("tickets")}>
-          <span className="user-nav-ico">📄</span> My Tickets
-        </Link>
+        <div
+          className={itemClass("dashboard")}
+          onClick={() => navigate("/user")}
+        >
+          Dashboard
+        </div>
 
-        <Link to="/user/create" className={item("create")}>
-          <span className="user-nav-ico">➕</span> Create Ticket
-        </Link>
+        <div
+          className={itemClass("my-tickets")}
+          onClick={() => navigate("/user/tickets")}
+        >
+          My Tickets
+        </div>
 
-        <Link to="/user/profile" className={item("profile")}>
-          <span className="user-nav-ico">👤</span> Profile
-        </Link>
+        <div
+          className={itemClass("create-ticket")}
+          onClick={() => navigate("/user/tickets/create")}
+        >
+          Create Ticket
+        </div>
+
+        <div
+          className={itemClass("profile")}
+          onClick={() => navigate("/user/profile")}
+        >
+          Profile
+        </div>
+
       </nav>
 
       <button className="user-logout" onClick={logout}>
         Logout
       </button>
+
     </aside>
   );
 }

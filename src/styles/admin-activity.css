@@ -46,6 +46,12 @@
   color: #6b7280;
 }
 
+.activity-loading {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
 /* ===== LIST ACTIVITY ===== */
 
 .activity-list {

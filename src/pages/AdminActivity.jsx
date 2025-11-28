@@ -1,43 +1,66 @@
+import { useEffect, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
-
-const dummyActivities = [
-  {
-    id: 1,
-    message: "Ticket TKT-001 assigned to Mike Johnson",
-    by: "Admin",
-    time: "5 minutes ago",
-  },
-  {
-    id: 2,
-    message: "Ticket TKT-003 marked as closed",
-    by: "Sarah Davis",
-    time: "15 minutes ago",
-  },
-  {
-    id: 3,
-    message: "New ticket TKT-005 created by Charlie Green",
-    by: "System",
-    time: "1 hour ago",
-  },
-  {
-    id: 4,
-    message: "Ticket TKT-002 priority updated to High",
-    by: "Admin",
-    time: "2 hours ago",
-  },
-];
+import { fetchAdminActivities } from "../services/activity";
 
 export default function AdminActivity() {
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Ambil data dari backend
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setErrorMsg("");
+
+        const res = await fetchAdminActivities();
+
+        let raw =
+          res?.data?.activity_log ??
+          res?.activity_log ??
+          res?.data ??
+          res ??
+          [];
+
+        // hanya ambil array
+        if (!Array.isArray(raw)) {
+          raw = [];
+        }
+
+        setActivity(raw);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg(
+          err?.response?.data?.message ||
+            "Gagal mengambil log aktivitas dari server."
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Normalisasi field supaya aman
+  const getMessage = (a) =>
+    a.message ?? a.activity ?? a.description ?? a.log ?? "-";
+
+  const getActor = (a) =>
+    a.user_name ?? a.user ?? a.actor ?? a.by ?? a.created_by ?? "System";
+
+  const getTime = (a) =>
+    a.time ?? a.created_at ?? a.timestamp ?? a.datetime ?? "";
+
+  const getAvatar = (name) => (String(name).trim()[0] || "A").toUpperCase();
+
   return (
     <div className="admin-page activity-layout">
-      {/* Sidebar kiri */}
       <AdminSidebar active="activity" />
 
-      {/* Konten kanan */}
       <main className="admin-main">
         <div className="activity-wrapper">
-          {/* Header halaman */}
+          {/* HEADER */}
           <header className="activity-header">
             <h1 className="activity-header-title">Activity Log</h1>
             <p className="activity-header-sub">
@@ -45,35 +68,50 @@ export default function AdminActivity() {
             </p>
           </header>
 
-          {/* Card utama activity */}
+          {/* Error handling */}
+          {errorMsg && <div className="auth-error">{errorMsg}</div>}
+
+          {/* CARD */}
           <section className="activity-card">
             <div className="activity-card-title">System Activity Log</div>
             <div className="activity-card-sub">
-              Recent system events and changes
+              Recent updates & logs from system
             </div>
 
-            <ul className="activity-list">
-              {dummyActivities.map((a) => (
-                <li key={a.id} className="activity-item">
-                  <div className="activity-avatar">A</div>
+            {loading ? (
+              <div className="activity-loading">Loading activity...</div>
+            ) : (
+              <ul className="activity-list">
+                {activity.map((a, idx) => {
+                  const message = getMessage(a);
+                  const actor = getActor(a);
+                  const time = getTime(a);
 
-                  <div>
-                    <div className="activity-text">{a.message}</div>
-                    <div className="activity-meta">
-                      <span>by {a.by}</span>
-                      <span className="dot">•</span>
-                      <span>{a.time}</span>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  return (
+                    <li key={a.id ?? idx} className="activity-item">
+                      <div className="activity-avatar">{getAvatar(actor)}</div>
 
-              {dummyActivities.length === 0 && (
-                <div className="activity-empty">
-                  Belum ada activity yang tercatat.
-                </div>
-              )}
-            </ul>
+                      <div>
+                        <div className="activity-text">{message}</div>
+                        <div className="activity-meta">
+                          <span>by {actor}</span>
+                          {time && (
+                            <>
+                              <span className="dot">•</span>
+                              <span>{time}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+
+                {!activity.length && !errorMsg && (
+                  <div className="activity-empty">Tidak ada activity log.</div>
+                )}
+              </ul>
+            )}
           </section>
         </div>
       </main>

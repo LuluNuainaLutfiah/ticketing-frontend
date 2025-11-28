@@ -26,17 +26,24 @@ export default function AdminSidebar({ active = "overview" }) {
 
       {/* Menu */}
       <nav className="admin-menu">
-        <Link to="/admin" className={itemClass("overview")}>
+        <div
+          className={itemClass("overview")}
+          onClick={() => navigate("/admin")}
+        >
           Ringkasan
-        </Link>
-
-        <Link to="/admin/tickets" className={itemClass("tickets")}>
+        </div>
+        <div
+          className={itemClass("tickets")}
+          onClick={() => navigate("/admin/tickets")}
+        >
           Tiket
-        </Link>
-
-        <Link to="/admin/activity" className={itemClass("activity")}>
+        </div>
+        <div
+          className={itemClass("activity")}
+          onClick={() => navigate("/admin/activity")}
+        >
           Log Aktivitas
-        </Link>
+        </div>
       </nav>
 
       {/* Logout */}

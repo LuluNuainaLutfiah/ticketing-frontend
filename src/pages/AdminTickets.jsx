@@ -1,117 +1,129 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
-
-const mockTickets = [
-  {
-    id: "TKT-001",
-    title: "Cannot access email",
-    user: "John Doe",
-    category: "Email",
-    priority: "high",
-    status: "in_progress",
-    assignee: "Mike Johnson",
-    createdAt: "2025-11-09",
-  },
-  {
-    id: "TKT-002",
-    title: "WiFi connection issues",
-    user: "Jane Smith",
-    category: "Network",
-    priority: "medium",
-    status: "open",
-    assignee: "Unassigned",
-    createdAt: "2025-11-10",
-  },
-  {
-    id: "TKT-003",
-    title: "Software installation request",
-    user: "Bob Wilson",
-    category: "Software",
-    priority: "low",
-    status: "closed",
-    assignee: "Sarah Davis",
-    createdAt: "2025-11-05",
-  },
-  {
-    id: "TKT-004",
-    title: "Printer not working",
-    user: "Alice Brown",
-    category: "Hardware",
-    priority: "high",
-    status: "open",
-    assignee: "Mike Johnson",
-    createdAt: "2025-11-11",
-  },
-  {
-    id: "TKT-005",
-    title: "Password reset",
-    user: "Charlie Green",
-    category: "Account",
-    priority: "medium",
-    status: "in_progress",
-    assignee: "Sarah Davis",
-    createdAt: "2025-11-10",
-  },
-];
+import { fetchAdminTickets } from "../services/tickets";
 
 export default function AdminTickets() {
+  const [tickets, setTickets] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const tickets = mockTickets;
+  // Normalisasi status dari backend -> open / in_progress / closed
+  const normalizeStatus = (s) => {
+    const val = String(s || "").toLowerCase();
 
-  const counts = useMemo(
-    () => ({
-      open: tickets.filter((t) => t.status === "open").length,
-      in_progress: tickets.filter((t) => t.status === "in_progress").length,
-      closed: tickets.filter((t) => t.status === "closed").length,
-    }),
-    [tickets]
-  );
+    if (["in_progress", "on_progress", "progress"].includes(val)) {
+      return "in_progress";
+    }
+    if (["closed", "resolved", "done"].includes(val)) {
+      return "closed";
+    }
+    if (["pending"].includes(val)) {
+      // kalau kamu mau punya status "Pending" sendiri, bisa ditambah chip baru
+      return "open";
+    }
+    return "open";
+  };
 
-  const filteredTickets = useMemo(
-    () =>
-      tickets.filter((t) => {
-        const okStatus = statusFilter === "all" || t.status === statusFilter;
+  // Ambil data ticket dari server
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setErrorMsg("");
 
-        const q = search.toLowerCase();
+        const data = await fetchAdminTickets();
+        const list = Array.isArray(data?.data) ? data.data : data;
+        setTickets(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg(
+          err?.response?.data?.message ||
+            "Gagal mengambil data tiket dari server."
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Hitung statistik per status
+  const counts = useMemo(() => {
+    const normalized = tickets.map((t) => normalizeStatus(t.status));
+    return {
+      open: normalized.filter((s) => s === "open").length,
+      in_progress: normalized.filter((s) => s === "in_progress").length,
+      closed: normalized.filter((s) => s === "closed").length,
+    };
+  }, [tickets]);
+
+  // Helper ambil field yang mungkin beda nama di backend
+  const getId = (t) => t.id ?? t.ticket_id ?? t.code ?? "-";
+
+  const getTitle = (t) => t.title ?? t.subject ?? t.summary ?? "-";
+
+  const getCategory = (t) => t.category?.name ?? t.category ?? t.type ?? "-";
+
+  const getPriority = (t) => String(t.priority ?? "Low");
+
+  const getCreated = (t) => t.created_at ?? t.createdAt ?? t.date ?? "";
+
+  // Data setelah filter status + search
+  const filteredTickets = useMemo(() => {
+    const q = search.toLowerCase();
+
+    return tickets
+      .map((t) => ({ ...t, _status: normalizeStatus(t.status) }))
+      .filter((t) => {
+        const okStatus =
+          statusFilter === "all" ? true : t._status === statusFilter;
+
+        const id = String(getId(t)).toLowerCase();
+        const title = String(getTitle(t)).toLowerCase();
+        const category = String(getCategory(t)).toLowerCase();
+        const priority = String(getPriority(t)).toLowerCase();
+
         const okSearch =
-          t.id.toLowerCase().includes(q) ||
-          t.title.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q);
+          id.includes(q) ||
+          title.includes(q) ||
+          category.includes(q) ||
+          priority.includes(q);
 
         return okStatus && okSearch;
-      }),
-    [tickets, statusFilter, search]
-  );
+      });
+  }, [tickets, statusFilter, search]);
 
-  const priorityClass = (p) =>
-    p === "high"
-      ? "priority-badge high"
-      : p === "medium"
-      ? "priority-badge medium"
-      : "priority-badge low";
+  const priorityClass = (p) => {
+    const val = String(p || "").toLowerCase();
+    if (val === "high") return "priority-badge high";
+    if (val === "medium") return "priority-badge medium";
+    return "priority-badge low";
+  };
 
-  const statusClass = (s) =>
-    s === "open"
-      ? "status-badge open"
-      : s === "in_progress"
-      ? "status-badge in-progress"
-      : "status-badge closed";
+  const statusClass = (s) => {
+    if (s === "open") return "status-badge open";
+    if (s === "in_progress") return "status-badge in-progress";
+    if (s === "closed") return "status-badge closed";
+    return "status-badge";
+  };
 
-  const statusLabel = (s) =>
-    s === "in_progress" ? "In Progress" : s[0].toUpperCase() + s.slice(1);
+  const statusLabel = (s) => {
+    if (s === "in_progress") return "In Progress";
+    if (s === "closed") return "Closed";
+    return "Open";
+  };
 
   return (
-    <div className="admin-layout tickets-layout">
+    <div className="admin-page tickets-layout">
       {/* Sidebar kiri */}
       <AdminSidebar active="tickets" />
 
       {/* Konten kanan */}
       <main className="admin-main">
         <div className="tickets-page">
-          {/* Header halaman */}
+          {/* HEADER */}
           <div className="tickets-header">
             <div>
               <h1 className="tickets-title">All Tickets</h1>
@@ -133,7 +145,10 @@ export default function AdminTickets() {
             </div>
           </div>
 
-          {/* Card + table */}
+          {/* ERROR MESSAGE */}
+          {errorMsg && <div className="tickets-error">{errorMsg}</div>}
+
+          {/* CARD + TABLE */}
           <div className="tickets-card">
             <div className="tickets-card-header">
               <div>
@@ -156,7 +171,9 @@ export default function AdminTickets() {
                 <button
                   className={
                     "filter-chip" +
-                    (statusFilter === "in_progress" ? " active in-progress" : "")
+                    (statusFilter === "in_progress"
+                      ? " active in-progress"
+                      : "")
                   }
                   onClick={() => setStatusFilter("in_progress")}
                 >
@@ -186,51 +203,65 @@ export default function AdminTickets() {
               </div>
             </div>
 
-            <div className="tickets-table-wrapper">
-              <table className="tickets-table">
-                <thead>
-                  <tr>
-                    <th>Ticket ID</th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTickets.length === 0 ? (
+            {/* TABLE */}
+            {loading ? (
+              <div className="tickets-loading">Loading tickets...</div>
+            ) : (
+              <div className="tickets-table-wrapper">
+                <table className="tickets-table">
+                  <thead>
                     <tr>
-                      {/* kolom berkurang jadi 6 */}
-                      <td colSpan="6" className="empty-row">
-                        Tidak ada tiket yang cocok.
-                      </td>
+                      <th>Ticket ID</th>
+                      <th>Title</th>
+                      <th>Category</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Created</th>
                     </tr>
-                  ) : (
-                    filteredTickets.map((t) => (
-                      <tr key={t.id}>
-                        <td>{t.id}</td>
-                        <td className="ticket-title-cell">
-                          <button className="link-button">{t.title}</button>
+                  </thead>
+                  <tbody>
+                    {filteredTickets.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Tidak ada tiket yang cocok.
                         </td>
-                        <td>{t.category}</td>
-                        <td>
-                          <span className={priorityClass(t.priority)}>
-                            {t.priority[0].toUpperCase() + t.priority.slice(1)}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={statusClass(t.status)}>
-                            {statusLabel(t.status)}
-                          </span>
-                        </td>
-                        <td>{t.createdAt}</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      filteredTickets.map((t, idx) => {
+                        const id = getId(t);
+                        const title = getTitle(t);
+                        const cat = getCategory(t);
+                        const priority = getPriority(t);
+                        const st = normalizeStatus(t.status);
+                        const created = getCreated(t);
+
+                        return (
+                          <tr key={id || idx}>
+                            <td>{id}</td>
+                            <td className="ticket-title-cell">
+                              {/* nanti bisa diarahkan ke halaman detail */}
+                              <button className="link-button">{title}</button>
+                            </td>
+                            <td>{cat}</td>
+                            <td>
+                              <span className={priorityClass(priority)}>
+                                {priority}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={statusClass(st)}>
+                                {statusLabel(st)}
+                              </span>
+                            </td>
+                            <td>{created}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </main>

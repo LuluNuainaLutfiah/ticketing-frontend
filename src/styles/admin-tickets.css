@@ -126,6 +126,19 @@
   align-items: center;
 }
 
+.tickets-error {
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.tickets-loading {
+  padding: 12px 4px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+
 /* search bar */
 .tickets-search {
   position: relative;

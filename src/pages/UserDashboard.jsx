@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import UserSidebar from "../components/user/UserSidebar";
 import UserTopbar from "../components/user/UserTopbar";
 import "../styles/user-dashboard.css";
+import { fetchUserTickets } from "../services/tickets"; // <-- sesuaikan path kalau beda
 
 export default function UserDashboard() {
   const user = useMemo(() => {
@@ -15,57 +16,14 @@ export default function UserDashboard() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
 
+  // data dari backend
+  const [tickets, setTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
   // modal state
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
-
-  // Dummy tickets (nanti ganti dari API Laravel)
-  const tickets = [
-    {
-      id: "TKT-001",
-      title: "Cannot access email",
-      category: "Email",
-      priority: "High",
-      status: "progress",
-      updated_at: "2025-11-10 10:30 AM",
-      created_at: "2025-11-09 09:00 AM",
-      assignee: "Mike Johnson",
-      description: "Saya tidak bisa login ke email kampus sejak pagi.",
-    },
-    {
-      id: "TKT-002",
-      title: "WiFi connection issue",
-      category: "Network",
-      priority: "Medium",
-      status: "open",
-      updated_at: "2025-11-10 02:45 PM",
-      created_at: "2025-11-10 01:10 PM",
-      assignee: "Unassigned",
-      description: "Wifi putus-nyambung di gedung A.",
-    },
-    {
-      id: "TKT-003",
-      title: "Software installation request",
-      category: "Software",
-      priority: "Low",
-      status: "done",
-      updated_at: "2025-11-08 04:20 PM",
-      created_at: "2025-11-08 09:00 AM",
-      assignee: "Sarah Davis",
-      description: "Mohon instal software SPSS di lab komputer.",
-    },
-    {
-      id: "TKT-004",
-      title: "VPN access not working",
-      category: "Network",
-      priority: "High",
-      status: "progress",
-      updated_at: "2025-11-09 03:00 PM",
-      created_at: "2025-11-09 10:00 AM",
-      assignee: "Mike Johnson",
-      description: "VPN tidak bisa connect dari rumah.",
-    },
-  ];
 
   const normalizeStatus = (s) => {
     const v = String(s || "").toLowerCase();
@@ -74,15 +32,43 @@ export default function UserDashboard() {
     return "open";
   };
 
+  // AMBIL DATA TICKET DARI BACKEND
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingTickets(true);
+        setErrorMsg("");
+
+        const data = await fetchUserTickets();
+
+        // antisipasi bentuk response: { data: [...] } atau langsung []
+        const list = Array.isArray(data?.data) ? data.data : data;
+        setTickets(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg(
+          err?.response?.data?.message ||
+            "Gagal mengambil data tiket dari server."
+        );
+        setTickets([]);
+      } finally {
+        setLoadingTickets(false);
+      }
+    })();
+  }, []);
+
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
+    const id = String(t.id ?? t.ticket_id ?? "").toLowerCase();
+    const title = String(t.title ?? t.subject ?? "").toLowerCase();
+    const category = String(t.category ?? t.category_name ?? "").toLowerCase();
+
     const matchText =
-      t.id.toLowerCase().includes(q) ||
-      t.title.toLowerCase().includes(q) ||
-      t.category.toLowerCase().includes(q);
+      id.includes(q) || title.includes(q) || category.includes(q);
 
     const st = normalizeStatus(t.status);
     const matchStatus = status === "all" ? true : st === status;
+
     return matchText && matchStatus;
   });
 
@@ -91,6 +77,12 @@ export default function UserDashboard() {
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
+
+  const priorityClass = (priority) =>
+    `pill pri-${String(priority || "").toLowerCase()}`;
+
+  const statusClass = (status) =>
+    `pill st-${normalizeStatus(status)}`;
 
   return (
     <div className="user-page">
@@ -102,7 +94,10 @@ export default function UserDashboard() {
           setQuery={setQuery}
           status={status}
           setStatus={setStatus}
+          user={user}
         />
+
+        {!!errorMsg && <div className="user-error">{errorMsg}</div>}
 
         {/* STAT CARDS */}
         <div className="user-stats">
@@ -110,21 +105,21 @@ export default function UserDashboard() {
             <div className="user-stat-icon icon-open">📩</div>
             <div className="user-stat-title">Open Tickets</div>
             <div className="user-stat-sub">Waiting for response</div>
-            <div className="user-stat-foot">Average response: 2.4 hours</div>
+            <div className="user-stat-foot">{stats.open} tickets</div>
           </div>
 
           <div className="user-stat-card">
             <div className="user-stat-icon icon-progress">⏳</div>
             <div className="user-stat-title">In Progress</div>
             <div className="user-stat-sub">Being worked on</div>
-            <div className="user-stat-foot">Latest update: 30 min ago</div>
+            <div className="user-stat-foot">{stats.progress} tickets</div>
           </div>
 
           <div className="user-stat-card">
             <div className="user-stat-icon icon-done">✅</div>
             <div className="user-stat-title">Resolved</div>
             <div className="user-stat-sub">Completed tickets</div>
-            <div className="user-stat-foot">This month: 1 tickets</div>
+            <div className="user-stat-foot">{stats.done} tickets</div>
           </div>
         </div>
 
@@ -135,6 +130,7 @@ export default function UserDashboard() {
             <div className="needhelp-sub">
               Create a new support ticket and our team will assist you
             </div>
+            {/* nanti bisa navigate ke halaman create ticket */}
             <button className="needhelp-btn">+ Create New Ticket</button>
           </div>
           <div className="needhelp-icon">🎫</div>
@@ -164,44 +160,58 @@ export default function UserDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t) => {
-                  const st = normalizeStatus(t.status);
-                  return (
-                    <tr key={t.id}>
-                      <td>{t.id}</td>
-                      <td>{t.title}</td>
-                      <td>{t.category}</td>
-                      <td>
-                        <span className={`pill pri-${t.priority.toLowerCase()}`}>
-                          {t.priority}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`pill st-${st}`}>
-                          {st === "open" && "Open"}
-                          {st === "progress" && "In Progress"}
-                          {st === "done" && "Resolved"}
-                        </span>
-                      </td>
-                      <td>{t.updated_at}</td>
-                      <td>
-                        <button
-                          className="view-btn"
-                          onClick={() => setSelectedTicket(t)}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {filtered.length === 0 && (
+                {loadingTickets ? (
+                  <tr>
+                    <td colSpan="7" className="empty-row">
+                      Loading tickets...
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-row">
                       No tickets found.
                     </td>
                   </tr>
+                ) : (
+                  filtered.map((t) => {
+                    const st = normalizeStatus(t.status);
+
+                    const id = t.id ?? t.ticket_id ?? "-";
+                    const title = t.title ?? t.subject ?? "-";
+                    const category = t.category ?? t.category_name ?? "-";
+                    const priority = t.priority ?? "Low";
+                    const updated =
+                      t.updated_at ?? t.updatedAt ?? t.last_update ?? "-";
+
+                    return (
+                      <tr key={id}>
+                        <td>{id}</td>
+                        <td>{title}</td>
+                        <td>{category}</td>
+                        <td>
+                          <span className={priorityClass(priority)}>
+                            {priority}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={statusClass(st)}>
+                            {st === "open" && "Open"}
+                            {st === "progress" && "In Progress"}
+                            {st === "done" && "Resolved"}
+                          </span>
+                        </td>
+                        <td>{updated}</td>
+                        <td>
+                          <button
+                            className="view-btn"
+                            onClick={() => setSelectedTicket(t)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -214,21 +224,27 @@ export default function UserDashboard() {
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
             <div className="info-sub">Find answers to common questions</div>
-            <a className="info-link" href="#">Browse FAQ →</a>
+            <a className="info-link" href="#">
+              Browse FAQ →
+            </a>
           </div>
 
           <div className="info-card">
             <div className="info-icon info-green">🗓️</div>
             <div className="info-title">Service Hours</div>
             <div className="info-sub">Monday - Friday: 8 AM - 6 PM</div>
-            <a className="info-link" href="#">View Schedule →</a>
+            <a className="info-link" href="#">
+              View Schedule →
+            </a>
           </div>
 
           <div className="info-card">
             <div className="info-icon info-purple">🟣</div>
             <div className="info-title">Live Chat</div>
             <div className="info-sub">Chat with support team</div>
-            <a className="info-link" href="#">Start Chat →</a>
+            <a className="info-link" href="#">
+              Start Chat →
+            </a>
           </div>
         </section>
       </main>
@@ -236,38 +252,43 @@ export default function UserDashboard() {
       {/* ===== MODAL VIEW TICKET ===== */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div
-            className="modal-card"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={closeModal}>
               ✕
             </button>
 
             <div className="modal-title">Ticket Detail</div>
-            <div className="modal-sub">ID: {selectedTicket.id}</div>
+            <div className="modal-sub">
+              ID: {selectedTicket.id ?? selectedTicket.ticket_id}
+            </div>
 
             <div className="modal-body">
               <div className="modal-row">
                 <span>Title</span>
-                <strong>{selectedTicket.title}</strong>
+                <strong>{selectedTicket.title ?? selectedTicket.subject}</strong>
               </div>
               <div className="modal-row">
                 <span>Category</span>
-                <strong>{selectedTicket.category}</strong>
+                <strong>{selectedTicket.category ?? "-"}</strong>
               </div>
               <div className="modal-row">
                 <span>Priority</span>
                 <strong>
-                  <span className={`pill pri-${selectedTicket.priority.toLowerCase()}`}>
-                    {selectedTicket.priority}
+                  <span
+                    className={priorityClass(selectedTicket.priority ?? "Low")}
+                  >
+                    {selectedTicket.priority ?? "Low"}
                   </span>
                 </strong>
               </div>
               <div className="modal-row">
                 <span>Status</span>
                 <strong>
-                  <span className={`pill st-${normalizeStatus(selectedTicket.status)}`}>
+                  <span
+                    className={statusClass(
+                      normalizeStatus(selectedTicket.status)
+                    )}
+                  >
                     {normalizeStatus(selectedTicket.status)}
                   </span>
                 </strong>
@@ -282,7 +303,12 @@ export default function UserDashboard() {
               </div>
               <div className="modal-row">
                 <span>Last Update</span>
-                <strong>{selectedTicket.updated_at || "-"}</strong>
+                <strong>
+                  {selectedTicket.updated_at ??
+                    selectedTicket.updatedAt ??
+                    selectedTicket.last_update ??
+                    "-"}
+                </strong>
               </div>
 
               <div className="modal-desc">
