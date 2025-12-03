@@ -32,23 +32,42 @@ export default function LoginPage() {
         password: form.password,
       });
 
-      // ---- Normalisasi response (biar aman kalau backend beda format)
+      // --- Normalisasi response dari backend ---
       const token =
         data.token ||
         data.access_token ||
         data.data?.token ||
         data.data?.access_token;
 
-      const user = data.user || data.data?.user || data.data || null;
+      const user =
+        data.user ||
+        data.data?.user ||
+        data.data ||
+        null;
 
-      if (token) localStorage.setItem("token", token);
-      if (user) localStorage.setItem("user", JSON.stringify(user));
+      if (!user) {
+        setErrorMsg("Login berhasil tetapi data user tidak ditemukan.");
+        setLoading(false);
+        return;
+      }
 
-      const role =
-        user?.role || user?.level || (user?.is_admin ? "admin" : "user");
+      if (token) {
+        localStorage.setItem("token", token);
+      }
 
-      if (role === "admin") navigate("/admin");
-      else navigate("/user");
+      // simpan user lengkap (ada role, user_type, npm/nik, phone, dll)
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // role di DB: 'admin' / 'user'
+      const role = user.role === "admin" ? "admin" : "user";
+
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        // sesuaikan dengan route dashboard user kamu
+        // kalau dashboard user di "/", pakai "/" di sini
+        navigate("/user");
+      }
     } catch (err) {
       console.error(err);
       setErrorMsg(
@@ -114,11 +133,12 @@ export default function LoginPage() {
                 Ingat saya
               </label>
 
-              {/* kalau belum ada fitur lupa password, mending nonaktif dulu */}
               <button
                 type="button"
                 className="auth-link-small"
-                onClick={() => alert("Fitur lupa password belum tersedia")}
+                onClick={() =>
+                  alert("Fitur lupa password belum tersedia")
+                }
               >
                 Lupa password?
               </button>

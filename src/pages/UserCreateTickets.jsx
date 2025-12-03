@@ -17,7 +17,7 @@ export default function UserCreateTicket() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [priority, setPriority] = useState("");
+  const [priority, setPriority] = useState(""); // low, medium, high
   const [description, setDescription] = useState("");
   const [attachment, setAttachment] = useState(null);
 
@@ -35,7 +35,6 @@ export default function UserCreateTicket() {
     setErrorMsg("");
     setSuccessMsg("");
 
-    // validasi sederhana
     if (!title || !category || !priority || !description) {
       setErrorMsg("Harap isi semua field wajib bertanda *");
       return;
@@ -47,11 +46,8 @@ export default function UserCreateTicket() {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("category", category);
-      formData.append("priority", priority);
+      formData.append("priority", priority); // sudah value low/medium/high
       formData.append("description", description);
-
-      // kalau backend butuh user_id, biasanya sudah dari token; kalau butuh manual:
-      // if (user.id) formData.append("user_id", user.id);
 
       if (attachment) {
         formData.append("attachment", attachment);
@@ -60,22 +56,20 @@ export default function UserCreateTicket() {
       await createUserTicket(formData);
 
       setSuccessMsg("Ticket berhasil dibuat.");
-      // reset form
+
       setTitle("");
       setCategory("");
       setPriority("");
       setDescription("");
       setAttachment(null);
 
-      // setelah beberapa detik, redirect ke My Tickets
       setTimeout(() => {
         navigate("/user/tickets");
       }, 800);
     } catch (err) {
       console.error(err);
       setErrorMsg(
-        err?.response?.data?.message ||
-          "Gagal mengirim ticket ke server."
+        err?.response?.data?.message || "Gagal mengirim ticket ke server."
       );
     } finally {
       setSubmitting(false);
@@ -91,17 +85,13 @@ export default function UserCreateTicket() {
       <UserSidebar active="create-ticket" />
 
       <main className="user-main uct-main">
-        {/* HEADER ATAS */}
         <header className="uct-header">
           <h1 className="uct-header-title">Create New Ticket</h1>
-          <p className="uct-header-sub">
-            Submit a new support request.
-          </p>
+          <p className="uct-header-sub">Submit a new support request.</p>
         </header>
 
         <div className="uct-wrapper">
           <section className="uct-card">
-            {/* icon & judul kecil */}
             <div className="uct-card-header">
               <div className="uct-icon-circle">➕</div>
               <div>
@@ -115,9 +105,7 @@ export default function UserCreateTicket() {
             {errorMsg && <div className="uct-alert error">{errorMsg}</div>}
             {successMsg && <div className="uct-alert success">{successMsg}</div>}
 
-            {/* FORM */}
             <form className="uct-form" onSubmit={handleSubmit}>
-              {/* TITLE */}
               <div className="uct-form-group">
                 <label className="uct-label">
                   Ticket Title <span className="uct-required">*</span>
@@ -131,7 +119,6 @@ export default function UserCreateTicket() {
                 />
               </div>
 
-              {/* CATEGORY + PRIORITY */}
               <div className="uct-row">
                 <div className="uct-form-group">
                   <label className="uct-label">
@@ -148,7 +135,6 @@ export default function UserCreateTicket() {
                     <option value="Software">Software</option>
                     <option value="Hardware">Hardware</option>
                     <option value="Account">Account</option>
-                    {/* kalau mau dinamis dari DB bisa diubah nanti */}
                   </select>
                 </div>
 
@@ -162,14 +148,14 @@ export default function UserCreateTicket() {
                     onChange={(e) => setPriority(e.target.value)}
                   >
                     <option value="">Select priority</option>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
+                    {/* VALUE HARUS LOWERCASE */}
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
                   </select>
                 </div>
               </div>
 
-              {/* DESCRIPTION */}
               <div className="uct-form-group">
                 <label className="uct-label">
                   Detailed Description <span className="uct-required">*</span>
@@ -187,11 +173,8 @@ export default function UserCreateTicket() {
                 </div>
               </div>
 
-              {/* ATTACHMENT */}
               <div className="uct-form-group">
-                <label className="uct-label">
-                  Attachments (Optional)
-                </label>
+                <label className="uct-label">Attachments (Optional)</label>
 
                 <label className="uct-upload-box">
                   <input
@@ -212,7 +195,6 @@ export default function UserCreateTicket() {
                 </label>
               </div>
 
-              {/* ACTION BUTTONS */}
               <div className="uct-actions">
                 <button
                   type="button"
@@ -222,6 +204,7 @@ export default function UserCreateTicket() {
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   className="uct-btn uct-btn-primary"

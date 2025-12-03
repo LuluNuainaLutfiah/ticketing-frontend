@@ -1,16 +1,16 @@
+// src/services/auth.js
 import api from "./api";
 
-export async function login({ email, password }) {
-  const response = await api.post("/api/auth/login", { email, password });
-  return response.data;
-}
+// REGISTER
+export const register = async (payload) => {
+  // HARUS ke /auth/register sesuai routes/api.php
+  const res = await api.post("/auth/register", payload);
+  return res.data;
+};
 
-export async function register({ name, email, password, password_confirmation }) {
-  const response = await api.post("/api/auth/register", {
-    name,
-    email,
-    password,
-    password_confirmation,
-  });
-  return response.data;
-}
+// LOGIN
+export const login = async (payload) => {
+  // HARUS ke /auth/login
+  const res = await api.post("/auth/login", payload);
+  return res.data;
+};

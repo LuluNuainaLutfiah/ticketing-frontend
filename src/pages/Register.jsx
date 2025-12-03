@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../services/auth";
-import "../styles/login.css"; // boleh tetap ini kalau kamu memang pakai style yg sama
+import "../styles/login.css";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -10,6 +10,9 @@ export default function RegisterPage() {
     email: "",
     password: "",
     password_confirmation: "",
+    user_type: "mahasiswa", // mahasiswa / dosen
+    id_number: "",          // NPM / NIK
+    phone: "",
     remember: false,
   });
   const [loading, setLoading] = useState(false);
@@ -35,13 +38,28 @@ export default function RegisterPage() {
     }
 
     try {
-      // kirim hanya field yg dibutuhkan backend
+      // payload yang dikirim ke backend
       const payload = {
         name: form.name,
         email: form.email,
         password: form.password,
         password_confirmation: form.password_confirmation,
+
+        // di DB: enum('admin','user')
+        role: "user",
+
+        // di DB: enum('mahasiswa','dosen')
+        user_type: form.user_type,
+
+        phone: form.phone || null,
       };
+
+      // mapping id_number ke npm / nik sesuai user_type
+      if (form.user_type === "mahasiswa") {
+        payload.npm = form.id_number;
+      } else {
+        payload.nik = form.id_number;
+      }
 
       const data = await register(payload);
 
@@ -61,7 +79,7 @@ export default function RegisterPage() {
       if (token) localStorage.setItem("token", token);
       if (user) localStorage.setItem("user", JSON.stringify(user));
 
-      // setelah register, biasanya arahkan login
+      // setelah register, arahkan ke login
       navigate("/login");
     } catch (err) {
       console.error(err);
@@ -79,6 +97,9 @@ export default function RegisterPage() {
     }
   };
 
+  const idLabel =
+    form.user_type === "mahasiswa" ? "NPM (Mahasiswa)" : "NIK (Dosen)";
+
   return (
     <div className="auth-page">
       <div className="auth-bg">
@@ -92,6 +113,7 @@ export default function RegisterPage() {
           {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
           <form onSubmit={handleSubmit}>
+            {/* NAMA */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="name">
                 Nama Lengkap
@@ -106,6 +128,7 @@ export default function RegisterPage() {
               />
             </div>
 
+            {/* EMAIL */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="email">
                 Email Address
@@ -121,6 +144,55 @@ export default function RegisterPage() {
               />
             </div>
 
+            {/* USER TYPE (Mahasiswa / Dosen) */}
+            <div className="auth-form-group">
+              <label className="auth-label" htmlFor="user_type">
+                Status Pengguna
+              </label>
+              <select
+                id="user_type"
+                name="user_type"
+                className="auth-input"
+                value={form.user_type}
+                onChange={handleChange}
+                required
+              >
+                  <option value="mahasiswa">Mahasiswa</option>
+                  <option value="dosen">Dosen</option>
+              </select>
+            </div>
+
+            {/* NPM / NIK */}
+            <div className="auth-form-group">
+              <label className="auth-label" htmlFor="id_number">
+                {idLabel}
+              </label>
+              <input
+                id="id_number"
+                name="id_number"
+                className="auth-input"
+                value={form.id_number}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* PHONE */}
+            <div className="auth-form-group">
+              <label className="auth-label" htmlFor="phone">
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                className="auth-input"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="+62..."
+              />
+            </div>
+
+            {/* PASSWORD */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="password">
                 Password
@@ -136,6 +208,7 @@ export default function RegisterPage() {
               />
             </div>
 
+            {/* KONFIRMASI PASSWORD */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="password_confirmation">
                 Konfirmasi Password
@@ -151,7 +224,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* checkbox ini opsional, tidak dikirim ke backend */}
+            {/* Remember me (opsional, tidak dikirim) */}
             <div className="auth-row-between">
               <label className="auth-remember">
                 <input

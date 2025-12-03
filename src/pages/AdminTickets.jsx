@@ -1,3 +1,4 @@
+// src/pages/AdminTickets.jsx
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
@@ -10,24 +11,21 @@ export default function AdminTickets() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Normalisasi status dari backend -> open / in_progress / closed
+  // ============================
+  // Normalisasi status dari DB
+  // DB: OPEN / IN_PROGRESS / CLOSED
+  // UI: open / in_progress / closed
+  // ============================
   const normalizeStatus = (s) => {
-    const val = String(s || "").toLowerCase();
+    const val = String(s || "").toUpperCase();
 
-    if (["in_progress", "on_progress", "progress"].includes(val)) {
-      return "in_progress";
-    }
-    if (["closed", "resolved", "done"].includes(val)) {
-      return "closed";
-    }
-    if (["pending"].includes(val)) {
-      // kalau kamu mau punya status "Pending" sendiri, bisa ditambah chip baru
-      return "open";
-    }
+    if (val === "IN_PROGRESS") return "in_progress";
+    if (val === "CLOSED") return "closed";
+    // termasuk OPEN atau apapun yg tidak dikenali -> open
     return "open";
   };
 
-  // Ambil data ticket dari server
+  // Ambil data ticket dari server (admin endpoint)
   useEffect(() => {
     (async () => {
       try {
@@ -59,16 +57,30 @@ export default function AdminTickets() {
     };
   }, [tickets]);
 
-  // Helper ambil field yang mungkin beda nama di backend
-  const getId = (t) => t.id ?? t.ticket_id ?? t.code ?? "-";
+  // ============================
+  // Helper sesuai struktur tabel `ticketing`
+  // ============================
+  const getId = (t) =>
+    t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
 
-  const getTitle = (t) => t.title ?? t.subject ?? t.summary ?? "-";
+  const getTitle = (t) => t.title ?? "-";
 
-  const getCategory = (t) => t.category?.name ?? t.category ?? t.type ?? "-";
+  const getCategory = (t) => t.category ?? "-";
 
-  const getPriority = (t) => String(t.priority ?? "Low");
+  const getPriority = (t) => String(t.priority ?? "LOW");
 
-  const getCreated = (t) => t.created_at ?? t.createdAt ?? t.date ?? "";
+  const getCreated = (t) => {
+    const raw = t.created_at ?? t.createdAt ?? t.date;
+    if (!raw) return "-";
+    // kalau mau tetap raw dari DB, cukup: return raw;
+    try {
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return raw;
+      return d.toLocaleString(); // bebas mau diubah formatnya
+    } catch {
+      return raw;
+    }
+  };
 
   // Data setelah filter status + search
   const filteredTickets = useMemo(() => {
@@ -95,6 +107,7 @@ export default function AdminTickets() {
       });
   }, [tickets, statusFilter, search]);
 
+  // Badge priority
   const priorityClass = (p) => {
     const val = String(p || "").toLowerCase();
     if (val === "high") return "priority-badge high";
@@ -102,6 +115,7 @@ export default function AdminTickets() {
     return "priority-badge low";
   };
 
+  // Badge status
   const statusClass = (s) => {
     if (s === "open") return "status-badge open";
     if (s === "in_progress") return "status-badge in-progress";

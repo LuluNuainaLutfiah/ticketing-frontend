@@ -10,6 +10,7 @@ import AdminTickets from "../pages/AdminTickets";
 import AdminActivity from "../pages/AdminActivity";
 import UserTickets from "../pages/UserTickets";
 import UserCreateTicket from "../pages/UserCreateTickets";
+import UserProfile from "../pages/UserProfile";
 
 export default function AppRouter() {
   return (
@@ -26,6 +27,7 @@ export default function AppRouter() {
           <Route path="/admin/activity" element={<AdminActivity />} />
           <Route path="/user/tickets" element={<UserTickets />} />
           <Route path="/user/tickets/create" element={<UserCreateTicket />} />
+          <Route path="/user/profile" element={<UserProfile />} />
         </Route>
       </Routes>
     </BrowserRouter>

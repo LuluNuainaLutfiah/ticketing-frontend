@@ -1,58 +1,69 @@
-// services/tickets.js
+// src/services/tickets.js
 import api from "./api";
 
-/**
- * =======================
- *  USER TICKETS
- * =======================
- */
+/* ============================
+ * USER TICKETS
+ * ============================ */
 
 /**
- * Ambil semua tiket milik user yang sedang login
- * GET /api/user/tickets
+ * Ambil semua ticket milik user yang sedang login
+ * GET /api/tickets  (userIndex)
  */
 export const fetchUserTickets = async (params = {}) => {
-  const res = await api.get("/user/tickets", { params });
-  // backend bisa balikin { data: [...] } atau langsung [...]
-  return res.data;
+  const res = await api.get("/tickets", { params });
+  return res.data; // bisa {data:[...]} atau [...]
 };
 
 /**
- * Detail 1 ticket user
- * GET /api/user/tickets/{id}
+ * Ambil detail 1 ticket user
+ * GET /api/tickets/{id_ticket}
  */
 export const fetchUserTicketDetail = async (id) => {
-  const res = await api.get(`/user/tickets/${id}`);
+  const res = await api.get(`/tickets/${id}`);
   return res.data;
 };
 
 /**
- * Buat tiket baru (user)
- * POST /api/user/tickets
- *
- * NOTE:
- * - `formData` harus instance FormData dari frontend
- * - Bisa berisi field biasa (title, category, dst) + file (attachment)
+ * Buat ticket baru
+ * POST /api/tickets
+ * - di frontend kamu kirim FormData, jadi cek dulu tipenya
  */
-export const createUserTicket = async (formData) => {
-  const res = await api.post("/user/tickets", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const createUserTicket = async (payload) => {
+  const isFormData = payload instanceof FormData;
+
+  const res = await api.post("/tickets", payload, {
+    headers: isFormData
+      ? { "Content-Type": "multipart/form-data" }
+      : { "Content-Type": "application/json" },
   });
+
   return res.data;
 };
 
-
-
 /**
- * =======================
- *  ADMIN TICKETS
- * =======================
+ * Update ticket user (kalau dipakai)
+ * PUT /api/tickets/{id_ticket}
  */
+export const updateUserTicket = async (id, payload) => {
+  const res = await api.put(`/tickets/${id}`, payload);
+  return res.data;
+};
 
 /**
- * Ambil semua tiket untuk admin
+ * Hapus ticket user (kalau dipakai)
+ * DELETE /api/tickets/{id_ticket}
+ */
+export const deleteUserTicket = async (id) => {
+  const res = await api.delete(`/tickets/${id}`);
+  return res.data;
+};
+
+/* ============================
+ * ADMIN TICKETS
+ * ============================ */
+
+/**
+ * Ambil semua ticket untuk admin
  * GET /api/admin/tickets
  */
 export const fetchAdminTickets = async (params = {}) => {
@@ -62,7 +73,7 @@ export const fetchAdminTickets = async (params = {}) => {
 
 /**
  * Detail 1 ticket untuk admin
- * GET /api/admin/tickets/{id}
+ * GET /api/admin/tickets/{id_ticket}
  */
 export const fetchAdminTicketDetail = async (id) => {
   const res = await api.get(`/admin/tickets/${id}`);
@@ -70,10 +81,10 @@ export const fetchAdminTicketDetail = async (id) => {
 };
 
 /**
- * Admin update status / assign tiket
- * PUT /api/admin/tickets/{id}
+ * Admin update status tiket
+ * PATCH /api/admin/tickets/{id_ticket}/status
  */
 export const adminUpdateTicket = async (id, payload) => {
-  const res = await api.put(`/admin/tickets/${id}`, payload);
+  const res = await api.patch(`/admin/tickets/${id}/status`, payload);
   return res.data;
 };

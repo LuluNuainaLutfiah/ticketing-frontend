@@ -21,15 +21,34 @@ export default function AdminDashboard() {
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ===============================
+  // Normalisasi status dari DB
+  // DB: OPEN / IN_PROGRESS / CLOSED
+  // UI: open / in_progress / closed
+  // ===============================
   const normalizeStatus = (s) => {
-    const val = String(s || "").toLowerCase();
-    if (["in_progress", "on_progress", "progress"].includes(val))
-      return "progress";
-    if (["resolved", "closed", "done"].includes(val)) return "done";
-    if (["pending"].includes(val)) return "pending";
-    return "open";
+    const val = String(s || "").toUpperCase();
+
+    if (val === "IN_PROGRESS") return "in_progress";
+    if (val === "CLOSED") return "closed";
+    return "open"; // termasuk OPEN atau value lain
   };
 
+  // Helper sesuai struktur tabel ticketing
+  const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
+  const getTitle = (t) => t.title ?? t.subject ?? "-";
+  const getAssignee = (t) =>
+    t.assignee?.name ?? t.assignee ?? t.assigned_to ?? "Unassigned";
+
+  const getPriority = (t) => {
+    const raw = String(t.priority ?? "LOW").toUpperCase(); // LOW / MEDIUM / HIGH
+    // label cantik: Low / Medium / High
+    return raw.charAt(0) + raw.slice(1).toLowerCase();
+  };
+
+  // ===============================
+  // FETCH TICKETS
+  // ===============================
   useEffect(() => {
     (async () => {
       try {
@@ -40,7 +59,8 @@ export default function AdminDashboard() {
       } catch (err) {
         console.error(err);
         setErrorMsg(
-          err.response?.data?.message || "Gagal ambil data tickets dari server."
+          err.response?.data?.message ||
+            "Gagal ambil data tickets dari server."
         );
       } finally {
         setLoadingTickets(false);
@@ -48,6 +68,9 @@ export default function AdminDashboard() {
     })();
   }, []);
 
+  // ===============================
+  // FETCH ACTIVITY
+  // ===============================
   useEffect(() => {
     (async () => {
       try {
@@ -63,28 +86,33 @@ export default function AdminDashboard() {
     })();
   }, []);
 
+  // ===============================
+  // FILTER UNTUK TABEL "RECENT TICKETS"
+  // ===============================
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
+
+    const id = String(getId(t)).toLowerCase();
+    const title = String(getTitle(t)).toLowerCase();
+    const assignee = String(getAssignee(t)).toLowerCase();
+
     return (
-      String(t.id ?? "")
-        .toLowerCase()
-        .includes(q) ||
-      String(t.title ?? t.subject ?? "")
-        .toLowerCase()
-        .includes(q) ||
-      String(t.assignee?.name ?? t.assignee ?? "")
-        .toLowerCase()
-        .includes(q)
+      id.includes(q) ||
+      title.includes(q) ||
+      assignee.includes(q)
     );
   });
 
+  // ===============================
+  // STATS KARTU ATAS
+  // Pending = OPEN, Progress = IN_PROGRESS, Done = CLOSED
+  // ===============================
   const stats = {
     total: tickets.length,
-    pending: tickets.filter((t) => normalizeStatus(t.status) === "pending")
+    pending: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "in_progress")
       .length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
-      .length,
-    done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
+    done: tickets.filter((t) => normalizeStatus(t.status) === "closed").length,
   };
 
   return (
@@ -129,7 +157,7 @@ export default function AdminDashboard() {
 
         {/* GRID: RECENT TICKETS + ACTIVITY */}
         <div className="admin-grid">
-          {/* LEFT TABLE */}
+          {/* LEFT TABLE: RECENT TICKETS */}
           <div className="admin-table-card">
             <div className="admin-table-header">
               <div>
@@ -152,19 +180,16 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((t) => {
+                  {filtered.map((t, idx) => {
                     const st = normalizeStatus(t.status);
-                    const priority = String(t.priority || "Low");
-                    const assignee =
-                      t.assignee?.name ??
-                      t.assignee ??
-                      t.assigned_to ??
-                      "Unassigned";
+                    const priority = getPriority(t);
+                    const assignee = getAssignee(t);
+                    const id = getId(t);
 
                     return (
-                      <tr key={t.id}>
-                        <td>{t.id}</td>
-                        <td>{t.title ?? t.subject ?? "-"}</td>
+                      <tr key={id || idx}>
+                        <td>{id}</td>
+                        <td>{getTitle(t)}</td>
                         <td>
                           <span
                             className={`priority ${priority.toLowerCase()}`}
@@ -175,9 +200,8 @@ export default function AdminDashboard() {
                         <td>
                           <span className={`badge ${st}`}>
                             {st === "open" && "Open"}
-                            {st === "pending" && "Pending"}
-                            {st === "progress" && "In Progress"}
-                            {st === "done" && "Resolved"}
+                            {st === "in_progress" && "In Progress"}
+                            {st === "closed" && "Resolved"}
                           </span>
                         </td>
                         <td>{assignee}</td>
@@ -227,8 +251,6 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
-
-        {/* NOTE: tabel bawah "Tickets by Category" sengaja tidak dibuat */}
       </div>
     </div>
   );

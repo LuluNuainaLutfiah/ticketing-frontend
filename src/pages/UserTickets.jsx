@@ -26,7 +26,7 @@ export default function UserTickets() {
     const v = String(s || "").toLowerCase();
     if (v === "progress" || v === "in_progress") return "progress";
     if (["done", "resolved", "closed"].includes(v)) return "done";
-    return "open";
+    return "open"; // OPEN dari DB akan masuk sini
   };
 
   // GET DATA API
@@ -53,13 +53,30 @@ export default function UserTickets() {
     })();
   }, []);
 
+  // FORMAT TANGGAL CREATED
+  const createdLabel = (t) => {
+    const raw = t.created_at ?? t.createdAt ?? t.date;
+    if (!raw) return "-";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw; // fallback kalau format aneh
+
+    return d.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // FILTER
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
 
-    const id = String(t.id ?? t.ticket_id ?? "").toLowerCase();
+    // sesuai kolom tabel: id_ticket, code_ticket, title, category
+    const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
     const title = String(t.title ?? t.subject ?? "").toLowerCase();
-    const category = String(t.category ?? t.category_name ?? "").toLowerCase();
+    const category = String(t.category ?? "").toLowerCase();
 
     const matchText = id.includes(q) || title.includes(q) || category.includes(q);
 
@@ -82,15 +99,11 @@ export default function UserTickets() {
     return "Open";
   };
 
-  const createdLabel = (t) =>
-    t.created_at ?? t.createdAt ?? t.date ?? "-";
-
   return (
     <div className="user-page">
       <UserSidebar active="my-tickets" />
 
       <main className="user-main ut-no-topbar">
-
         {/* HEADER */}
         <header className="ut-header">
           <h1 className="ut-header-title">My Tickets</h1>
@@ -111,7 +124,10 @@ export default function UserTickets() {
               </p>
             </div>
 
-            <button className="ut-new-btn">
+            <button
+              className="ut-new-btn"
+              onClick={() => (window.location.href = "/user/tickets/create")}
+            >
               + New Ticket
             </button>
           </div>
@@ -146,21 +162,27 @@ export default function UserTickets() {
                   </tr>
                 ) : (
                   filtered.map((t) => {
-                    const id = t.id ?? t.ticket_id ?? "-";
+                    const key = t.id_ticket ?? t.id ?? t.code_ticket;
+                    const ticketId = t.code_ticket ?? "-";        // ← TCK-202512-09AF
                     const title = t.title ?? t.subject ?? "-";
-                    const category = t.category ?? t.category_name ?? "-";
-                    const priority = t.priority ?? "Low";
+                    const category = t.category ?? "-";
+                    const priority = t.priority ?? "LOW";
+
+                    // untuk sekarang created_by masih id user,
+                    // nanti bisa diganti jadi relasi nama petugas
                     const assignee =
-                      t.assignee?.name ?? t.assignee ?? "Unassigned";
+                      t.assignee?.name ??
+                      t.assignee ??
+                      "Unassigned";
 
                     return (
-                      <tr key={id}>
-                        <td>{id}</td>
+                      <tr key={key}>
+                        <td>{ticketId}</td>
                         <td className="ut-title-cell">{title}</td>
                         <td>{category}</td>
                         <td>
                           <span className={priorityClass(priority)}>
-                            {priority}
+                            {String(priority).toUpperCase()}
                           </span>
                         </td>
                         <td>
@@ -188,7 +210,7 @@ export default function UserTickets() {
         </section>
       </main>
 
-      {/* Modal tetap sama */}
+      {/* MODAL DETAIL */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -198,7 +220,9 @@ export default function UserTickets() {
 
             <div className="modal-title">Ticket Detail</div>
             <div className="modal-sub">
-              ID: {selectedTicket.id ?? selectedTicket.ticket_id}
+              ID: {selectedTicket.code_ticket ??
+                selectedTicket.id_ticket ??
+                selectedTicket.ticket_id}
             </div>
 
             <div className="modal-body">
@@ -218,7 +242,7 @@ export default function UserTickets() {
                 <span>Priority</span>
                 <strong>
                   <span className={priorityClass(selectedTicket.priority)}>
-                    {selectedTicket.priority}
+                    {String(selectedTicket.priority).toUpperCase()}
                   </span>
                 </strong>
               </div>
@@ -229,13 +253,6 @@ export default function UserTickets() {
                   <span className={statusClass(selectedTicket.status)}>
                     {statusLabel(selectedTicket.status)}
                   </span>
-                </strong>
-              </div>
-
-              <div className="modal-row">
-                <span>Assignee</span>
-                <strong>
-                  {selectedTicket.assignee ?? "Unassigned"}
                 </strong>
               </div>
 
