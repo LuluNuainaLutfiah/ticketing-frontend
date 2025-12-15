@@ -20,14 +20,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {showLoginButton && (
-          <button
-            className="navbar-login-btn"
-            onClick={() => navigate("/login")}
-          >
-            Login
-          </button>
-        )}
       </div>
     </header>
   );

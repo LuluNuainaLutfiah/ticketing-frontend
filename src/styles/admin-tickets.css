@@ -339,3 +339,261 @@
   background-color: #dcfce7;
   color: #166534;
 }
+
+/* ===================================== */
+/* ACTION BUTTONS DI KOLOM TABEL        */
+/* ===================================== */
+
+/* kolom paling kanan (Action) biar agak lega */
+.tickets-table td:last-child {
+  white-space: nowrap;
+}
+
+/* tombol aksi dasar */
+.action-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+/* warna-warna varian */
+.action-btn.blue {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.action-btn.blue:hover {
+  background-color: #bfdbfe;
+}
+
+.action-btn.green {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.action-btn.green:hover {
+  background-color: #bbf7d0;
+}
+
+.action-btn.gray {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.action-btn.gray:hover {
+  background-color: #d1d5db;
+}
+
+/* state disabled (pas lagi "Saving...") */
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.ticket-chat {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-chat-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ticket-chat-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.ticket-chat-body {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 8px;
+}
+
+.ticket-chat-empty {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.chat-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.chat-row-left {
+  justify-content: flex-start;
+}
+
+.chat-row-right {
+  justify-content: flex-end;
+}
+
+.chat-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.chat-row-right .chat-avatar {
+  margin-right: 0;
+  margin-left: 6px;
+  background: #2563eb;
+}
+
+.chat-bubble {
+  max-width: 70%;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.chat-row-right .chat-bubble {
+  background: #dbeafe;
+}
+
+.chat-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.chat-sender {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.chat-time {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.chat-text {
+  margin-bottom: 4px;
+}
+
+.chat-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-attachment-link {
+  font-size: 11px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.chat-attachment-link:hover {
+  text-decoration: underline;
+}
+
+.ticket-chat-locked {
+  font-size: 11px;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.ticket-chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-chat-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  font-size: 12px;
+  resize: none;
+}
+
+.ticket-chat-form-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ticket-chat-file {
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.ticket-chat-file input {
+  display: none;
+}
+
+.ticket-chat-file-names {
+  font-size: 11px;
+  color: #6b7280;
+  margin-right: auto;
+}
+
+.ticket-chat-send-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  font-size: 12px;
+  background: #16a34a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.ticket-chat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-chat-wrapper {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+
+.ticket-chat-error {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 6px;
+  padding: 6px 8px;
+}

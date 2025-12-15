@@ -1,11 +1,11 @@
-// src/pages/UserTicketDetail.jsx
+// src/pages/AdminTicketDetail.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import UserSidebar from "../components/user/UserSidebar";
-import { fetchUserTicketDetail } from "../services/tickets";
+import AdminSidebar from "../components/admin/AdminSidebar";
+import { fetchAdminTicketDetail } from "../services/tickets";
 import TicketChatPanel from "../pages/TicketChatPanel";
 
-export default function UserTicketDetail() {
+export default function AdminTicketDetail() {
   const { id } = useParams(); // id_ticket
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,12 +16,12 @@ export default function UserTicketDetail() {
       try {
         setLoading(true);
         setErrorMsg("");
-        const res = await fetchUserTicketDetail(id);
+        const res = await fetchAdminTicketDetail(id);
         setTicket(res.data || res);
       } catch (err) {
         console.error(err);
         setErrorMsg(
-          err?.response?.data?.message || "Gagal mengambil detail ticket."
+          err?.response?.data?.message || "Gagal mengambil detail ticket (admin)."
         );
       } finally {
         setLoading(false);
@@ -30,20 +30,19 @@ export default function UserTicketDetail() {
   }, [id]);
 
   return (
-    <div className="user-page">
-      <UserSidebar />
+    <div className="admin-page">
+      <AdminSidebar active="tickets" />
 
-      <main className="user-main">
+      <main className="admin-main">
         {loading ? (
           <div>Loading ticket...</div>
         ) : errorMsg ? (
-          <div className="ut-error">{errorMsg}</div>
+          <div className="tickets-error">{errorMsg}</div>
         ) : !ticket ? (
           <div>Ticket tidak ditemukan.</div>
         ) : (
-          <div className="ticket-detail-layout">
-            {/* Info ticket singkat */}
-            <section className="ticket-detail-card">
+          <div className="admin-ticket-detail-layout">
+            <section className="admin-ticket-detail-card">
               <h1>{ticket.title}</h1>
               <p className="ticket-detail-meta">
                 ID: {ticket.code_ticket} • Status: {ticket.status} •
@@ -52,8 +51,7 @@ export default function UserTicketDetail() {
               <p className="ticket-detail-desc">{ticket.description}</p>
             </section>
 
-            {/* Chat panel */}
-            <section className="ticket-detail-chat-card">
+            <section className="admin-ticket-detail-chat-card">
               <TicketChatPanel ticket={ticket} />
             </section>
           </div>

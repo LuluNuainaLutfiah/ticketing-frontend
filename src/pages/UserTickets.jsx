@@ -1,6 +1,9 @@
+// src/pages/UserTickets.jsx
 import { useEffect, useMemo, useState } from "react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-tickets.css";
+// kalau file TicketChatPanel.jsx ada di folder yang sama (pages), pakai "./"
+import TicketChatPanel from "./TicketChatPanel";
 import { fetchUserTickets } from "../services/tickets";
 
 export default function UserTickets() {
@@ -22,11 +25,12 @@ export default function UserTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
+  // NORMALISASI STATUS DARI DB → "open" / "progress" / "done"
   const normalizeStatus = (s) => {
-    const v = String(s || "").toLowerCase();
-    if (v === "progress" || v === "in_progress") return "progress";
-    if (["done", "resolved", "closed"].includes(v)) return "done";
-    return "open"; // OPEN dari DB akan masuk sini
+    const v = String(s || "").toUpperCase();
+    if (v === "IN_PROGRESS") return "progress";
+    if (v === "RESOLVED") return "done";
+    return "open";
   };
 
   // GET DATA API
@@ -58,7 +62,7 @@ export default function UserTickets() {
     const raw = t.created_at ?? t.createdAt ?? t.date;
     if (!raw) return "-";
     const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw; // fallback kalau format aneh
+    if (Number.isNaN(d.getTime())) return raw;
 
     return d.toLocaleString("id-ID", {
       year: "numeric",
@@ -69,16 +73,37 @@ export default function UserTickets() {
     });
   };
 
-  // FILTER
+  // FORMAT TANGGAL RESOLVED (resolved_at)
+  const resolvedLabel = (t) => {
+    const raw = t.resolved_at ?? t.resolution_date;
+    if (!raw) return "-";
+
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw;
+
+    return d.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // FILTER: search + status
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
 
-    // sesuai kolom tabel: id_ticket, code_ticket, title, category
     const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
-    const title = String(t.title ?? t.subject ?? "").toLowerCase();
+    const title = String(t.title ?? "").toLowerCase();
     const category = String(t.category ?? "").toLowerCase();
+    const desc = String(t.description ?? "").toLowerCase();
 
-    const matchText = id.includes(q) || title.includes(q) || category.includes(q);
+    const matchText =
+      id.includes(q) ||
+      title.includes(q) ||
+      category.includes(q) ||
+      desc.includes(q);
 
     const st = normalizeStatus(t.status);
     const matchStatus = statusFilter === "all" ? true : st === statusFilter;
@@ -89,8 +114,7 @@ export default function UserTickets() {
   const priorityClass = (p) =>
     `ut-priority ut-priority-${String(p || "").toLowerCase()}`;
 
-  const statusClass = (s) =>
-    `ut-status ut-status-${normalizeStatus(s)}`;
+  const statusClass = (s) => `ut-status ut-status-${normalizeStatus(s)}`;
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
@@ -119,9 +143,7 @@ export default function UserTickets() {
           <div className="ut-card-header">
             <div>
               <h2 className="ut-card-title">All Tickets</h2>
-              <p className="ut-card-sub">
-                {filtered.length} tickets found
-              </p>
+              <p className="ut-card-sub">{filtered.length} tickets found</p>
             </div>
 
             <button
@@ -141,7 +163,7 @@ export default function UserTickets() {
                   <th>Category</th>
                   <th>Priority</th>
                   <th>Status</th>
-                  <th>Assignee</th>
+                  <th>Resolved</th>
                   <th>Created</th>
                   <th>Action</th>
                 </tr>
@@ -163,17 +185,10 @@ export default function UserTickets() {
                 ) : (
                   filtered.map((t) => {
                     const key = t.id_ticket ?? t.id ?? t.code_ticket;
-                    const ticketId = t.code_ticket ?? "-";        // ← TCK-202512-09AF
-                    const title = t.title ?? t.subject ?? "-";
+                    const ticketId = t.code_ticket ?? "-";
+                    const title = t.title ?? "-";
                     const category = t.category ?? "-";
                     const priority = t.priority ?? "LOW";
-
-                    // untuk sekarang created_by masih id user,
-                    // nanti bisa diganti jadi relasi nama petugas
-                    const assignee =
-                      t.assignee?.name ??
-                      t.assignee ??
-                      "Unassigned";
 
                     return (
                       <tr key={key}>
@@ -190,7 +205,7 @@ export default function UserTickets() {
                             {statusLabel(t.status)}
                           </span>
                         </td>
-                        <td>{assignee}</td>
+                        <td>{resolvedLabel(t)}</td>
                         <td>{createdLabel(t)}</td>
                         <td>
                           <button
@@ -210,7 +225,7 @@ export default function UserTickets() {
         </section>
       </main>
 
-      {/* MODAL DETAIL */}
+      {/* MODAL DETAIL + CHAT */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -220,7 +235,8 @@ export default function UserTickets() {
 
             <div className="modal-title">Ticket Detail</div>
             <div className="modal-sub">
-              ID: {selectedTicket.code_ticket ??
+              ID:{" "}
+              {selectedTicket.code_ticket ??
                 selectedTicket.id_ticket ??
                 selectedTicket.ticket_id}
             </div>
@@ -228,21 +244,19 @@ export default function UserTickets() {
             <div className="modal-body">
               <div className="modal-row">
                 <span>Title</span>
-                <strong>
-                  {selectedTicket.title ?? selectedTicket.subject}
-                </strong>
+                <strong>{selectedTicket.title ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
                 <span>Category</span>
-                <strong>{selectedTicket.category}</strong>
+                <strong>{selectedTicket.category ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
                 <span>Priority</span>
                 <strong>
                   <span className={priorityClass(selectedTicket.priority)}>
-                    {String(selectedTicket.priority).toUpperCase()}
+                    {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
                 </strong>
               </div>
@@ -257,6 +271,11 @@ export default function UserTickets() {
               </div>
 
               <div className="modal-row">
+                <span>Resolved</span>
+                <strong>{resolvedLabel(selectedTicket)}</strong>
+              </div>
+
+              <div className="modal-row">
                 <span>Created</span>
                 <strong>{createdLabel(selectedTicket)}</strong>
               </div>
@@ -264,6 +283,11 @@ export default function UserTickets() {
               <div className="modal-desc">
                 <div className="modal-desc-title">Description</div>
                 <p>{selectedTicket.description ?? "-"}</p>
+              </div>
+
+              {/* ⬇️ CHAT PANEL DITARUH DI SINI */}
+              <div className="modal-chat-wrapper">
+                <TicketChatPanel ticket={selectedTicket} />
               </div>
             </div>
           </div>

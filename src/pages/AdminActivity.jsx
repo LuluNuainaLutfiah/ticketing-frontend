@@ -1,3 +1,4 @@
+// src/pages/AdminActivity.jsx
 import { useEffect, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
@@ -8,7 +9,6 @@ export default function AdminActivity() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Ambil data dari backend
   useEffect(() => {
     (async () => {
       try {
@@ -16,20 +16,26 @@ export default function AdminActivity() {
         setErrorMsg("");
 
         const res = await fetchAdminActivities();
+        // kemungkinan bentuk response:
+        // { message: "...", data: [ ... ] }
+        // atau { data: { recent_activities: [ ... ] } } kalau kamu ubah nanti
 
-        let raw =
-          res?.data?.activity_log ??
-          res?.activity_log ??
-          res?.data ??
-          res ??
-          [];
+        let list = [];
 
-        // hanya ambil array
-        if (!Array.isArray(raw)) {
-          raw = [];
+        if (Array.isArray(res?.data)) {
+          // case: { data: [ ... ] }
+          list = res.data;
+        } else if (Array.isArray(res?.recent_activities)) {
+          // kalau controller nanti balikin: { recent_activities: [ ... ] }
+          list = res.recent_activities;
+        } else if (Array.isArray(res)) {
+          // case: langsung array
+          list = res;
+        } else {
+          list = [];
         }
 
-        setActivity(raw);
+        setActivity(list);
       } catch (err) {
         console.error(err);
         setErrorMsg(
@@ -42,15 +48,33 @@ export default function AdminActivity() {
     })();
   }, []);
 
-  // Normalisasi field supaya aman
-  const getMessage = (a) =>
-    a.message ?? a.activity ?? a.description ?? a.log ?? "-";
+  // ====== Normalisasi field dari ActivityLog ======
+  // Model: action, details, action_time, performed_by (+ relasi user, ticket)
+
+  const getMessage = (a) => a.details || a.action || "-";
 
   const getActor = (a) =>
-    a.user_name ?? a.user ?? a.actor ?? a.by ?? a.created_by ?? "System";
+    a.user?.name ||
+    a.user_name ||
+    (a.performed_by ? `User #${a.performed_by}` : "System");
 
-  const getTime = (a) =>
-    a.time ?? a.created_at ?? a.timestamp ?? a.datetime ?? "";
+  const getTime = (a) => {
+    const raw =
+      a.action_time || a.time || a.created_at || a.timestamp || a.datetime;
+
+    if (!raw) return "";
+
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw;
+
+    return d.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const getAvatar = (name) => (String(name).trim()[0] || "A").toUpperCase();
 
@@ -68,7 +92,7 @@ export default function AdminActivity() {
             </p>
           </header>
 
-          {/* Error handling */}
+          {/* Error message */}
           {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
           {/* CARD */}
@@ -88,8 +112,10 @@ export default function AdminActivity() {
                   const time = getTime(a);
 
                   return (
-                    <li key={a.id ?? idx} className="activity-item">
-                      <div className="activity-avatar">{getAvatar(actor)}</div>
+                    <li key={a.id_log ?? idx} className="activity-item">
+                      <div className="activity-avatar">
+                        {getAvatar(actor)}
+                      </div>
 
                       <div>
                         <div className="activity-text">{message}</div>
@@ -102,13 +128,25 @@ export default function AdminActivity() {
                             </>
                           )}
                         </div>
+
+                        {/* Optional: info ticket kalau mau */}
+                        {a.ticket && (
+                          <div className="activity-ticket-ref">
+                            Ticket:{" "}
+                            <strong>
+                              {a.ticket.code_ticket || a.ticket.title}
+                            </strong>
+                          </div>
+                        )}
                       </div>
                     </li>
                   );
                 })}
 
                 {!activity.length && !errorMsg && (
-                  <div className="activity-empty">Tidak ada activity log.</div>
+                  <div className="activity-empty">
+                    Tidak ada activity log.
+                  </div>
                 )}
               </ul>
             )}

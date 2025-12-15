@@ -414,6 +414,26 @@
   text-decoration: none;
 }
 
+.modal-body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.modal-chat-wrapper {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ticket-chat-error {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
 /* =========================================================
    MODAL DETAIL (VIEW TICKET)
 ========================================================= */

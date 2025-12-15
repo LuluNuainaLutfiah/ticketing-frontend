@@ -23,22 +23,25 @@ export default function AdminDashboard() {
 
   // ===============================
   // Normalisasi status dari DB
-  // DB: OPEN / IN_PROGRESS / CLOSED
-  // UI: open / in_progress / closed
+  // DB: OPEN / IN_PROGRESS / CLOSED / RESOLVED
+  // UI (sesuai CSS): open / progress / done
   // ===============================
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
 
-    if (val === "IN_PROGRESS") return "in_progress";
-    if (val === "CLOSED") return "closed";
+    if (val === "IN_PROGRESS") return "progress";
+    if (val === "CLOSED" || val === "RESOLVED") return "done";
     return "open"; // termasuk OPEN atau value lain
   };
 
   // Helper sesuai struktur tabel ticketing
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
-  const getAssignee = (t) =>
-    t.assignee?.name ?? t.assignee ?? t.assigned_to ?? "Unassigned";
+
+  // Kolom tanggal selesai diperbaiki
+  const getCompletedAt = (t) =>
+    t.resolved_at ??
+    "-";
 
   const getPriority = (t) => {
     const raw = String(t.priority ?? "LOW").toUpperCase(); // LOW / MEDIUM / HIGH
@@ -94,25 +97,25 @@ export default function AdminDashboard() {
 
     const id = String(getId(t)).toLowerCase();
     const title = String(getTitle(t)).toLowerCase();
-    const assignee = String(getAssignee(t)).toLowerCase();
+    const completedAt = String(getCompletedAt(t)).toLowerCase();
 
     return (
       id.includes(q) ||
       title.includes(q) ||
-      assignee.includes(q)
+      completedAt.includes(q)
     );
   });
 
   // ===============================
   // STATS KARTU ATAS
-  // Pending = OPEN, Progress = IN_PROGRESS, Done = CLOSED
+  // Pending = OPEN, Progress = IN_PROGRESS, Done = CLOSED/RESOLVED
   // ===============================
   const stats = {
     total: tickets.length,
     pending: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "in_progress")
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
       .length,
-    done: tickets.filter((t) => normalizeStatus(t.status) === "closed").length,
+    done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
 
   return (
@@ -176,15 +179,15 @@ export default function AdminDashboard() {
                     <th>Title</th>
                     <th>Priority</th>
                     <th>Status</th>
-                    <th>Assignee</th>
+                    <th>Completed At</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((t, idx) => {
                     const st = normalizeStatus(t.status);
                     const priority = getPriority(t);
-                    const assignee = getAssignee(t);
                     const id = getId(t);
+                    const completedAt = getCompletedAt(t);
 
                     return (
                       <tr key={id || idx}>
@@ -200,11 +203,11 @@ export default function AdminDashboard() {
                         <td>
                           <span className={`badge ${st}`}>
                             {st === "open" && "Open"}
-                            {st === "in_progress" && "In Progress"}
-                            {st === "closed" && "Resolved"}
+                            {st === "progress" && "In Progress"}
+                            {st === "done" && "Resolved"}
                           </span>
                         </td>
-                        <td>{assignee}</td>
+                        <td>{completedAt}</td>
                       </tr>
                     );
                   })}

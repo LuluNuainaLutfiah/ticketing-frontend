@@ -2,7 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
-import { fetchAdminTickets } from "../services/tickets";
+import {
+  fetchAdminTickets,
+  adminUpdateTicketStatus,
+} from "../services/tickets";
+import TicketChatPanel from "./TicketChatPanel";
 
 export default function AdminTickets() {
   const [tickets, setTickets] = useState([]);
@@ -10,22 +14,26 @@ export default function AdminTickets() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [updatingId, setUpdatingId] = useState(null); // loading per baris
+
+  // modal detail + chat
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const closeModal = () => setSelectedTicket(null);
 
   // ============================
-  // Normalisasi status dari DB
-  // DB: OPEN / IN_PROGRESS / CLOSED
+  // NORMALISASI STATUS
+  // DB: OPEN / IN_PROGRESS / RESOLVED
   // UI: open / in_progress / closed
   // ============================
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
 
     if (val === "IN_PROGRESS") return "in_progress";
-    if (val === "CLOSED") return "closed";
-    // termasuk OPEN atau apapun yg tidak dikenali -> open
-    return "open";
+    if (val === "RESOLVED" || val === "CLOSED") return "closed";
+    return "open"; // OPEN atau value lain
   };
 
-  // Ambil data ticket dari server (admin endpoint)
+  // AMBIL DATA TICKET ADMIN
   useEffect(() => {
     (async () => {
       try {
@@ -47,7 +55,7 @@ export default function AdminTickets() {
     })();
   }, []);
 
-  // Hitung statistik per status
+  // HITUNG JUMLAH PER STATUS
   const counts = useMemo(() => {
     const normalized = tickets.map((t) => normalizeStatus(t.status));
     return {
@@ -57,32 +65,49 @@ export default function AdminTickets() {
     };
   }, [tickets]);
 
-  // ============================
-  // Helper sesuai struktur tabel `ticketing`
-  // ============================
-  const getId = (t) =>
-    t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
-
+  // HELPER FIELD (COCOK DENGAN TABEL `ticketing`)
+  const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? "-";
-
   const getCategory = (t) => t.category ?? "-";
-
   const getPriority = (t) => String(t.priority ?? "LOW");
 
   const getCreated = (t) => {
     const raw = t.created_at ?? t.createdAt ?? t.date;
     if (!raw) return "-";
-    // kalau mau tetap raw dari DB, cukup: return raw;
     try {
       const d = new Date(raw);
       if (Number.isNaN(d.getTime())) return raw;
-      return d.toLocaleString(); // bebas mau diubah formatnya
+      return d.toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch {
       return raw;
     }
   };
 
-  // Data setelah filter status + search
+  const getResolved = (t) => {
+    const raw = t.resolved_at ?? t.resolution_date;
+    if (!raw) return "-";
+    try {
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return raw;
+      return d.toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return raw;
+    }
+  };
+
+  // FILTER: STATUS + SEARCH
   const filteredTickets = useMemo(() => {
     const q = search.toLowerCase();
 
@@ -107,7 +132,7 @@ export default function AdminTickets() {
       });
   }, [tickets, statusFilter, search]);
 
-  // Badge priority
+  // BADGE PRIORITY
   const priorityClass = (p) => {
     const val = String(p || "").toLowerCase();
     if (val === "high") return "priority-badge high";
@@ -115,7 +140,7 @@ export default function AdminTickets() {
     return "priority-badge low";
   };
 
-  // Badge status
+  // BADGE STATUS
   const statusClass = (s) => {
     if (s === "open") return "status-badge open";
     if (s === "in_progress") return "status-badge in-progress";
@@ -125,16 +150,99 @@ export default function AdminTickets() {
 
   const statusLabel = (s) => {
     if (s === "in_progress") return "In Progress";
-    if (s === "closed") return "Closed";
+    if (s === "closed") return "Resolved";
     return "Open";
+  };
+
+  // ============================
+  // UPDATE STATUS BY ADMIN
+  // ============================
+  const handleUpdateStatus = async (ticket, newStatus) => {
+    const idTicket = ticket.id_ticket ?? ticket.id;
+    if (!idTicket) {
+      alert("ID tiket tidak ditemukan.");
+      return;
+    }
+
+    try {
+      setUpdatingId(idTicket);
+
+      const result = await adminUpdateTicketStatus(idTicket, newStatus);
+      const updatedTicket = result.data ?? result;
+
+      setTickets((prev) =>
+        prev.map((t) =>
+          (t.id_ticket ?? t.id) === idTicket ? updatedTicket : t
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message || "Gagal mengubah status tiket."
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // RENDER TOMBOL AKSI PER BARIS
+  const renderActionButtons = (t) => {
+    const st = normalizeStatus(t.status);
+    const idTicket = t.id_ticket ?? t.id;
+    const isLoading = updatingId === idTicket;
+
+    if (st === "open") {
+      return (
+        <button
+          className="action-btn blue"
+          disabled={isLoading}
+          onClick={() => handleUpdateStatus(t, "IN_PROGRESS")}
+        >
+          {isLoading ? "Saving..." : "Start Progress"}
+        </button>
+      );
+    }
+
+    if (st === "in_progress") {
+      return (
+        <>
+          <button
+            className="action-btn green"
+            disabled={isLoading}
+            onClick={() => handleUpdateStatus(t, "RESOLVED")}
+          >
+            {isLoading ? "Saving..." : "Mark as Resolved"}
+          </button>
+          <button
+            className="action-btn gray"
+            disabled={isLoading}
+            onClick={() => handleUpdateStatus(t, "OPEN")}
+          >
+            Reopen
+          </button>
+        </>
+      );
+    }
+
+    if (st === "closed") {
+      return (
+        <button
+          className="action-btn gray"
+          disabled={isLoading}
+          onClick={() => handleUpdateStatus(t, "OPEN")}
+        >
+          {isLoading ? "Saving..." : "Reopen"}
+        </button>
+      );
+    }
+
+    return "-";
   };
 
   return (
     <div className="admin-page tickets-layout">
-      {/* Sidebar kiri */}
       <AdminSidebar active="tickets" />
 
-      {/* Konten kanan */}
       <main className="admin-main">
         <div className="tickets-page">
           {/* HEADER */}
@@ -159,7 +267,6 @@ export default function AdminTickets() {
             </div>
           </div>
 
-          {/* ERROR MESSAGE */}
           {errorMsg && <div className="tickets-error">{errorMsg}</div>}
 
           {/* CARD + TABLE */}
@@ -231,12 +338,13 @@ export default function AdminTickets() {
                       <th>Priority</th>
                       <th>Status</th>
                       <th>Created</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTickets.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="empty-row">
+                        <td colSpan="7" className="empty-row">
                           Tidak ada tiket yang cocok.
                         </td>
                       </tr>
@@ -253,8 +361,13 @@ export default function AdminTickets() {
                           <tr key={id || idx}>
                             <td>{id}</td>
                             <td className="ticket-title-cell">
-                              {/* nanti bisa diarahkan ke halaman detail */}
-                              <button className="link-button">{title}</button>
+                              {/* klik judul → buka modal detail + chat */}
+                              <button
+                                className="link-button"
+                                onClick={() => setSelectedTicket(t)}
+                              >
+                                {title}
+                              </button>
                             </td>
                             <td>{cat}</td>
                             <td>
@@ -268,6 +381,7 @@ export default function AdminTickets() {
                               </span>
                             </td>
                             <td>{created}</td>
+                            <td>{renderActionButtons(t)}</td>
                           </tr>
                         );
                       })
@@ -279,6 +393,74 @@ export default function AdminTickets() {
           </div>
         </div>
       </main>
+
+      {/* ============ MODAL DETAIL + CHAT ============ */}
+      {selectedTicket && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal}>
+              ✕
+            </button>
+
+            <div className="modal-title">Ticket Detail</div>
+            <div className="modal-sub">ID: {getId(selectedTicket)}</div>
+
+            <div className="modal-body">
+              <div className="modal-row">
+                <span>Title</span>
+                <strong>{getTitle(selectedTicket)}</strong>
+              </div>
+
+              <div className="modal-row">
+                <span>Category</span>
+                <strong>{getCategory(selectedTicket)}</strong>
+              </div>
+
+              <div className="modal-row">
+                <span>Priority</span>
+                <strong>
+                  <span className={priorityClass(getPriority(selectedTicket))}>
+                    {getPriority(selectedTicket)}
+                  </span>
+                </strong>
+              </div>
+
+              <div className="modal-row">
+                <span>Status</span>
+                <strong>
+                  <span
+                    className={statusClass(
+                      normalizeStatus(selectedTicket.status)
+                    )}
+                  >
+                    {statusLabel(normalizeStatus(selectedTicket.status))}
+                  </span>
+                </strong>
+              </div>
+
+              <div className="modal-row">
+                <span>Resolved</span>
+                <strong>{getResolved(selectedTicket)}</strong>
+              </div>
+
+              <div className="modal-row">
+                <span>Created</span>
+                <strong>{getCreated(selectedTicket)}</strong>
+              </div>
+
+              <div className="modal-desc">
+                <div className="modal-desc-title">Description</div>
+                <p>{selectedTicket.description ?? "-"}</p>
+              </div>
+
+              {/* CHAT PANEL */}
+              <div className="modal-chat-wrapper">
+                <TicketChatPanel ticket={selectedTicket} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
