@@ -1,5 +1,6 @@
 // src/pages/UserDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import UserTopbar from "../components/user/UserTopbar";
 import "../styles/user-dashboard.css";
@@ -7,6 +8,8 @@ import { fetchUserTickets } from "../services/tickets";
 import TicketChatPanel from "./TicketChatPanel";
 
 export default function UserDashboard() {
+  const navigate = useNavigate();
+
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
@@ -25,11 +28,6 @@ export default function UserDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
-  // =========================
-  // NORMALISASI STATUS
-  // DB: OPEN / IN_PROGRESS / RESOLVED
-  // UI: open / progress / done
-  // =========================
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
     if (v === "IN_PROGRESS") return "progress";
@@ -37,9 +35,6 @@ export default function UserDashboard() {
     return "open";
   };
 
-  // =========================
-  // FORMAT TANGGAL CREATED
-  // =========================
   const createdLabel = (t) => {
     const raw = t.created_at ?? t.createdAt ?? t.date;
     if (!raw) return "-";
@@ -54,9 +49,6 @@ export default function UserDashboard() {
     });
   };
 
-  // =========================
-  // FORMAT TANGGAL RESOLVED
-  // =========================
   const resolvedLabel = (t) => {
     const raw = t.resolved_at ?? t.resolution_date;
     if (!raw) return "-";
@@ -71,9 +63,6 @@ export default function UserDashboard() {
     });
   };
 
-  // =========================
-  // AMBIL DATA TICKET
-  // =========================
   useEffect(() => {
     (async () => {
       try {
@@ -97,18 +86,13 @@ export default function UserDashboard() {
     })();
   }, []);
 
-  // =========================
-  // FILTER UNTUK RECENT TABLE
-  // =========================
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
-
     const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
     const title = String(t.title ?? t.subject ?? "").toLowerCase();
     const category = String(t.category ?? t.category_name ?? "").toLowerCase();
 
-    const matchText =
-      id.includes(q) || title.includes(q) || category.includes(q);
+    const matchText = id.includes(q) || title.includes(q) || category.includes(q);
 
     const st = normalizeStatus(t.status);
     const matchStatus = status === "all" ? true : st === status;
@@ -116,9 +100,6 @@ export default function UserDashboard() {
     return matchText && matchStatus;
   });
 
-  // =========================
-  // STATS UNTUK KOTAK ATAS
-  // =========================
   const stats = {
     open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
@@ -129,8 +110,7 @@ export default function UserDashboard() {
   const priorityClass = (priority) =>
     `pill pri-${String(priority || "").toLowerCase()}`;
 
-  const statusPillClass = (st) =>
-    `pill st-${normalizeStatus(st)}`;
+  const statusPillClass = (st) => `pill st-${normalizeStatus(st)}`;
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
@@ -187,7 +167,7 @@ export default function UserDashboard() {
             </div>
             <button
               className="needhelp-btn"
-              onClick={() => (window.location.href = "/user/tickets/create")}
+              onClick={() => navigate("/user/tickets/create")}
             >
               + Create New Ticket
             </button>
@@ -204,7 +184,7 @@ export default function UserDashboard() {
             </div>
             <button
               className="recent-viewall"
-              onClick={() => (window.location.href = "/user/tickets")}
+              onClick={() => navigate("/user/tickets")}
             >
               View All
             </button>
@@ -284,27 +264,39 @@ export default function UserDashboard() {
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
             <div className="info-sub">Find answers to common questions</div>
-            <a className="info-link" href="#">
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/faq")}
+            >
               Browse FAQ →
-            </a>
+            </button>
           </div>
 
           <div className="info-card">
             <div className="info-icon info-green">🗓️</div>
             <div className="info-title">Service Hours</div>
             <div className="info-sub">Monday - Friday: 8 AM - 6 PM</div>
-            <a className="info-link" href="#">
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/service-hours")}
+            >
               View Schedule →
-            </a>
+            </button>
           </div>
 
+          {/* ✅ REPLACED: Live Chat -> How It Works */}
           <div className="info-card">
-            <div className="info-icon info-purple">🟣</div>
-            <div className="info-title">Live Chat</div>
-            <div className="info-sub">Chat with support team</div>
-            <a className="info-link" href="#">
-              Start Chat →
-            </a>
+            <div className="info-icon info-purple">📘</div>
+            <div className="info-title">How It Works</div>
+            <div className="info-sub">
+              Understand how your ticket is processed step by step
+            </div>
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/how-it-works")}
+            >
+              View Guide →
+            </button>
           </div>
         </section>
       </main>
@@ -340,9 +332,7 @@ export default function UserDashboard() {
                 <span>Priority</span>
                 <strong>
                   <span
-                    className={priorityClass(
-                      selectedTicket.priority ?? "LOW"
-                    )}
+                    className={priorityClass(selectedTicket.priority ?? "LOW")}
                   >
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
@@ -383,7 +373,6 @@ export default function UserDashboard() {
                 <p>{selectedTicket.description || "-"}</p>
               </div>
 
-              {/* ==== CHAT PANEL DI DALAM MODAL ==== */}
               <div className="modal-chat-wrapper">
                 <TicketChatPanel ticket={selectedTicket} />
               </div>

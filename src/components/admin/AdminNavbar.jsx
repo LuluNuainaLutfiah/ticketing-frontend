@@ -1,7 +1,37 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function AdminNavbar({ query, setQuery, user }) {
-  const [openNotif] = useState(false);
+export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) {
+  const navigate = useNavigate();
+
+  // ✅ harus ada setter biar bisa toggle
+  const [openNotif, setOpenNotif] = useState(false);
+  const notifRef = useRef(null);
+
+  const notifCount = useMemo(() => notifItems.length, [notifItems]);
+
+  // ✅ klik di luar => tutup
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!notifRef.current) return;
+      if (!notifRef.current.contains(e.target)) setOpenNotif(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const formatTime = (raw) => {
+    if (!raw) return "";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <header className="admin-navbar">
@@ -24,10 +54,75 @@ export default function AdminNavbar({ query, setQuery, user }) {
           />
         </div>
 
-        <div className="admin-notif">
-          <span className="admin-notif-bell">🔔</span>
-          <span className="admin-notif-badge">3</span>
-          {openNotif && <div className="admin-notif-panel">No notif</div>}
+        {/* ✅ NOTIFICATION */}
+        <div className="admin-notif" ref={notifRef}>
+          <button
+            type="button"
+            className="admin-notif-btn"
+            onClick={() => setOpenNotif((p) => !p)}
+            aria-label="Notifications"
+          >
+            <span className="admin-notif-bell">🔔</span>
+            {notifCount > 0 && (
+              <span className="admin-notif-badge">{notifCount}</span>
+            )}
+          </button>
+
+          {openNotif && (
+            <div className="admin-notif-panel">
+              <div className="admin-notif-panel-head">
+                <div className="admin-notif-panel-title">Notifications</div>
+                <div className="admin-notif-panel-sub">
+                  {notifCount} ticket masih OPEN
+                </div>
+              </div>
+
+              <div className="admin-notif-panel-list">
+                {notifCount === 0 ? (
+                  <div className="admin-notif-empty">Tidak ada notif 🎉</div>
+                ) : (
+                  notifItems.slice(0, 8).map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      className="admin-notif-item"
+                      onClick={() => {
+                        setOpenNotif(false);
+                        // ✅ masuk ke halaman ticket list
+                        navigate("/admin/tickets");
+                      }}
+                    >
+                      <div className="admin-notif-item-top">
+                        <div className="admin-notif-id">{n.id}</div>
+                        <div
+                          className={`admin-notif-pri pri-${String(
+                            n.priority || ""
+                          ).toLowerCase()}`}
+                        >
+                          {n.priority}
+                        </div>
+                      </div>
+                      <div className="admin-notif-msg">{n.title}</div>
+                      <div className="admin-notif-time">
+                        {formatTime(n.created_at)}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="admin-notif-panel-foot"
+                onClick={() => {
+                  setOpenNotif(false);
+                  navigate("/admin/tickets");
+                }}
+              >
+                View all tickets →
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="admin-user-mini">

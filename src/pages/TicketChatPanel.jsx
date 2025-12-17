@@ -1,9 +1,8 @@
 // src/pages/TicketChatPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTicketMessages, sendTicketMessage } from "../services/tickets";
 
 export default function TicketChatPanel({ ticket }) {
-  // ticket: object dari backend (punya id_ticket, status, resolved_at, dll)
   const ticketId = ticket?.id_ticket;
 
   const currentUser = useMemo(() => {
@@ -17,16 +16,19 @@ export default function TicketChatPanel({ ticket }) {
   const isAdmin = currentUser.role === "admin";
 
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+
+  // ✅ pisahkan loading awal vs background refresh
+  const [initialLoading, setInitialLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
 
+  const chatBodyRef = useRef(null);
+
   // ==============================
   // LOGIKA STATUS (boleh chat / tidak)
-  // Sama seperti di TicketMessageController
   // ==============================
   const status = String(ticket?.status || "").toUpperCase();
 
@@ -45,58 +47,72 @@ export default function TicketChatPanel({ ticket }) {
       return "Ticket sudah selesai. Chat tidak bisa digunakan lagi.";
     }
 
-    // admin selalu boleh chat (sesuai controller)
     return null;
   }, [status, isAdmin, ticketId]);
 
   const canSend = !chatLockedInfo;
 
   // ==============================
-  // AMBIL PESAN + POLLING
+  // AMBIL PESAN + POLLING (silent)
   // ==============================
   useEffect(() => {
     if (!ticketId) {
       setMessages([]);
-      setLoading(false);
+      setInitialLoading(false);
       return;
     }
 
     let cancelled = false;
 
-    const loadMessages = async () => {
+    const loadMessages = async ({ silent = false } = {}) => {
       try {
-        setLoading(true);
-        setErrorMsg("");
+        // ✅ hanya tampil loading di load pertama
+        if (!silent) {
+          setInitialLoading(true);
+          setErrorMsg("");
+        }
 
         const data = await fetchTicketMessages(ticketId);
         const list = Array.isArray(data?.data) ? data.data : data;
+        const next = Array.isArray(list) ? list : [];
 
         if (!cancelled) {
-          setMessages(Array.isArray(list) ? list : []);
+          setMessages(next);
         }
       } catch (err) {
         console.error(err);
         if (!cancelled) {
+          // ✅ error boleh tampil, tapi tidak bikin "loading..." muncul terus
           setErrorMsg(
             err?.response?.data?.message ||
               "Gagal mengambil pesan chat dari server."
           );
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !silent) setInitialLoading(false);
       }
     };
 
-    loadMessages();
+    // load pertama (boleh tampil loading)
+    loadMessages({ silent: false });
 
-    // polling 5 detik sekali
-    const interval = setInterval(loadMessages, 5000);
+    // polling tiap 5 detik (silent — tanpa ubah UI loading)
+    const interval = setInterval(() => loadMessages({ silent: true }), 5000);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
   }, [ticketId]);
+
+  // ==============================
+  // AUTO SCROLL KE BAWAH
+  // ==============================
+  useEffect(() => {
+    const el = chatBodyRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   // ==============================
   // HANDLE INPUT FILE
@@ -115,40 +131,36 @@ export default function TicketChatPanel({ ticket }) {
   // KIRIM PESAN
   // ==============================
   const handleSend = async (e) => {
-  e.preventDefault();
-  if (!ticketId) return;
+    e.preventDefault();
+    if (!ticketId) return;
 
-  // 🔴 VALIDASI: wajib ada keterangan pesan
-  if (!text.trim()) {
-    setErrorMsg("Harus sertakan keterangan pesan.");
-    return;
-  }
+    if (!text.trim()) {
+      setErrorMsg("Harus sertakan keterangan pesan.");
+      return;
+    }
 
-  try {
-    setSending(true);
-    setErrorMsg("");
+    try {
+      setSending(true);
+      setErrorMsg("");
 
-    const fd = new FormData();
-    fd.append("message_body", text.trim()); // selalu kirim teks
+      const fd = new FormData();
+      fd.append("message_body", text.trim());
+      files.forEach((file) => fd.append("files[]", file));
 
-    // boleh ada / tidak ada file, tapi teks wajib
-    files.forEach((file) => fd.append("files[]", file));
+      const res = await sendTicketMessage(ticketId, fd);
+      const newMsg = res.data || res;
 
-    const res = await sendTicketMessage(ticketId, fd);
-    const newMsg = res.data || res;
-
-    setMessages((prev) => [...prev, newMsg]);
-    resetForm();
-  } catch (err) {
-    console.error(err);
-    setErrorMsg(
-      err?.response?.data?.message || "Gagal mengirim pesan. Coba lagi."
-    );
-  } finally {
-    setSending(false);
-  }
-};
-
+      setMessages((prev) => [...prev, newMsg]);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal mengirim pesan. Coba lagi."
+      );
+    } finally {
+      setSending(false);
+    }
+  };
 
   // ==============================
   // HELPER: BUBBLE KIRI / KANAN
@@ -166,10 +178,8 @@ export default function TicketChatPanel({ ticket }) {
     return sender.name || "User";
   };
 
-  // URL file (sesuaikan sama baseURL API/storage kamu)
   const buildFileUrl = (att) => {
     const base = import.meta.env.VITE_API_BASE_URL || "";
-    // hilangkan /api di belakang kalau ada
     const root = base.replace(/\/api\/?$/, "");
     return `${root}/storage/${att.file_path}`;
   };
@@ -183,11 +193,11 @@ export default function TicketChatPanel({ ticket }) {
         </p>
       </div>
 
+      {/* error tetap tampil kalau ada */}
       {errorMsg && <div className="ticket-chat-error">{errorMsg}</div>}
 
-      {/* LIST CHAT */}
-      <div className="ticket-chat-body">
-        {loading ? (
+      <div className="ticket-chat-body" ref={chatBodyRef}>
+        {initialLoading ? (
           <div className="ticket-chat-empty">Loading chat...</div>
         ) : messages.length === 0 ? (
           <div className="ticket-chat-empty">
@@ -209,6 +219,7 @@ export default function TicketChatPanel({ ticket }) {
                 <div className="chat-avatar">
                   {sender[0]?.toUpperCase() || "?"}
                 </div>
+
                 <div className="chat-bubble">
                   <div className="chat-meta">
                     <span className="chat-sender">{sender}</span>
@@ -242,12 +253,10 @@ export default function TicketChatPanel({ ticket }) {
         )}
       </div>
 
-      {/* INFO KUNCI CHAT */}
       {chatLockedInfo && (
         <div className="ticket-chat-locked">{chatLockedInfo}</div>
       )}
 
-      {/* FORM KIRIM PESAN */}
       <form className="ticket-chat-form" onSubmit={handleSend}>
         <textarea
           className="ticket-chat-input"
@@ -282,9 +291,7 @@ export default function TicketChatPanel({ ticket }) {
           <button
             type="submit"
             className="ticket-chat-send-btn"
-            disabled={
-              !canSend || sending || (!text.trim() && files.length === 0)
-            }
+            disabled={!canSend || sending || (!text.trim() && files.length === 0)}
           >
             {sending ? "Mengirim..." : "Kirim"}
           </button>

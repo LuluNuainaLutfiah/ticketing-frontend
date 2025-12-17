@@ -16,6 +16,9 @@ import UserTickets from "../pages/UserTickets";
 import UserTicketDetail from "../pages/UserTicketDetail";
 import UserCreateTicket from "../pages/UserCreateTickets";
 import UserProfile from "../pages/UserProfile";
+import UserFAQ from "../pages/UserFAQ";
+import UserServiceHours from "../pages/UserServicesHours";
+import UserHowItWorks from "../pages/UserHowItWorks";
 
 export default function AppRouter() {
   return (
@@ -46,6 +49,9 @@ export default function AppRouter() {
           <Route path="user/tickets/create" element={<UserCreateTicket />} />
           <Route path="user/tickets/:id" element={<UserTicketDetail />} />
           <Route path="user/profile" element={<UserProfile />} />
+          <Route path="user/faq" element={<UserFAQ />} />
+          <Route path="user/service-hours" element={<UserServiceHours />} />
+          <Route path="user/how-it-works" element={<UserHowItWorks />} />
         </Route>
       </Routes>
     </BrowserRouter>

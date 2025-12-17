@@ -1,71 +1,79 @@
 // src/pages/AdminActivity.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
-import { fetchAdminActivities } from "../services/activity";
+import api from "../services/api"; // ✅ pakai axios instance lu (sesuaikan path kalau beda)
 
 export default function AdminActivity() {
-  const [activity, setActivity] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ✅ pagination state (server-side)
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const perPage = 10;
+
+  const loadActivities = async ({ silent = false, targetPage = page } = {}) => {
+    try {
+      if (!silent) setLoading(true);
+      setErrorMsg("");
+
+      // ✅ route sesuai contoh lu
+      const res = await api.get(
+        `/admin/dashboard/recent-activities?page=${targetPage}&per_page=${perPage}`
+      );
+
+      // backend lu: { message, data: paginator }
+      const paginator = res?.data?.data;
+
+      const list = Array.isArray(paginator?.data) ? paginator.data : [];
+
+      setRows(list);
+      setPage(paginator?.current_page ?? targetPage);
+      setLastPage(paginator?.last_page ?? 1);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message ||
+          "Gagal mengambil log aktivitas dari server."
+      );
+      setRows([]);
+      setLastPage(1);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  // load setiap page berubah
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setErrorMsg("");
+    loadActivities({ silent: false, targetPage: page });
 
-        const res = await fetchAdminActivities();
-        // kemungkinan bentuk response:
-        // { message: "...", data: [ ... ] }
-        // atau { data: { recent_activities: [ ... ] } } kalau kamu ubah nanti
+    // auto refresh 10 detik (tetep di page yang sama)
+    const interval = setInterval(() => {
+      loadActivities({ silent: true, targetPage: page });
+    }, 10000);
 
-        let list = [];
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-        if (Array.isArray(res?.data)) {
-          // case: { data: [ ... ] }
-          list = res.data;
-        } else if (Array.isArray(res?.recent_activities)) {
-          // kalau controller nanti balikin: { recent_activities: [ ... ] }
-          list = res.recent_activities;
-        } else if (Array.isArray(res)) {
-          // case: langsung array
-          list = res;
-        } else {
-          list = [];
-        }
-
-        setActivity(list);
-      } catch (err) {
-        console.error(err);
-        setErrorMsg(
-          err?.response?.data?.message ||
-            "Gagal mengambil log aktivitas dari server."
-        );
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  // ====== Normalisasi field dari ActivityLog ======
-  // Model: action, details, action_time, performed_by (+ relasi user, ticket)
-
-  const getMessage = (a) => a.details || a.action || "-";
+  // helpers
+  const getMessage = (a) => a?.details || a?.action || a?.activity || "-";
 
   const getActor = (a) =>
-    a.user?.name ||
-    a.user_name ||
-    (a.performed_by ? `User #${a.performed_by}` : "System");
+    a?.user?.name ||
+    a?.user_name ||
+    (a?.performed_by ? `User #${a.performed_by}` : "System");
 
   const getTime = (a) => {
     const raw =
-      a.action_time || a.time || a.created_at || a.timestamp || a.datetime;
+      a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
 
-    if (!raw) return "";
+    if (!raw) return "-";
 
     const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
+    if (Number.isNaN(d.getTime())) return String(raw);
 
     return d.toLocaleString("id-ID", {
       year: "numeric",
@@ -76,7 +84,30 @@ export default function AdminActivity() {
     });
   };
 
-  const getAvatar = (name) => (String(name).trim()[0] || "A").toUpperCase();
+  const getTicketRef = (a) =>
+    a?.ticket?.code_ticket || a?.ticket?.title || a?.ticket_code || "-";
+
+  // ✅ next/prev logic (sesuai yang lu tulis)
+  const canPrev = page > 1;
+  const canNext = page < lastPage;
+
+  const onNext = () => canNext && setPage((p) => p + 1);
+  const onPrev = () => canPrev && setPage((p) => p - 1);
+
+  // tombol angka 5 biji biar cakep
+  const pageNumbers = useMemo(() => {
+    const total = lastPage || 1;
+    const curr = page || 1;
+    const maxBtns = 3;
+
+    let start = Math.max(1, curr - 2);
+    let end = Math.min(total, start + maxBtns - 1);
+    start = Math.max(1, end - maxBtns + 1);
+
+    const nums = [];
+    for (let i = start; i <= end; i++) nums.push(i);
+    return nums;
+  }, [page, lastPage]);
 
   return (
     <div className="admin-page activity-layout">
@@ -92,63 +123,88 @@ export default function AdminActivity() {
             </p>
           </header>
 
-          {/* Error message */}
           {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
-          {/* CARD */}
           <section className="activity-card">
-            <div className="activity-card-title">System Activity Log</div>
-            <div className="activity-card-sub">
-              Recent updates & logs from system
+            <div className="activity-card-head">
+              <div>
+                <div className="activity-card-title">System Activity Log</div>
+                <div className="activity-card-sub">
+                  Recent updates & logs from system
+                </div>
+              </div>
+
+              <div className="activity-actions">
+                <button
+                  type="button"
+                  className="activity-refresh-btn"
+                  onClick={() =>
+                    loadActivities({ silent: false, targetPage: page })
+                  }
+                  disabled={loading}
+                >
+                  {loading ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
             </div>
 
             {loading ? (
               <div className="activity-loading">Loading activity...</div>
+            ) : rows.length === 0 ? (
+              <div className="activity-empty">Tidak ada activity log.</div>
             ) : (
-              <ul className="activity-list">
-                {activity.map((a, idx) => {
-                  const message = getMessage(a);
-                  const actor = getActor(a);
-                  const time = getTime(a);
+              <>
+                {/* TABLE */}
+                <div className="activity-table-wrap">
+                  <table className="activity-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Actor</th>
+                        <th>Message</th>
+                        <th>Ticket</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((a, idx) => (
+                        <tr key={a?.id_log ?? idx}>
+                          <td className="td-muted">{getTime(a)}</td>
+                          <td>{getActor(a)}</td>
+                          <td className="td-message">{getMessage(a)}</td>
+                          <td className="td-ticket">{getTicketRef(a)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-                  return (
-                    <li key={a.id_log ?? idx} className="activity-item">
-                      <div className="activity-avatar">
-                        {getAvatar(actor)}
-                      </div>
-
-                      <div>
-                        <div className="activity-text">{message}</div>
-                        <div className="activity-meta">
-                          <span>by {actor}</span>
-                          {time && (
-                            <>
-                              <span className="dot">•</span>
-                              <span>{time}</span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Optional: info ticket kalau mau */}
-                        {a.ticket && (
-                          <div className="activity-ticket-ref">
-                            Ticket:{" "}
-                            <strong>
-                              {a.ticket.code_ticket || a.ticket.title}
-                            </strong>
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-
-                {!activity.length && !errorMsg && (
-                  <div className="activity-empty">
-                    Tidak ada activity log.
+                {/* PAGINATION */}
+                <div className="activity-pagination">
+                  <div className="pg-info">
+                    Page <strong>{page}</strong> of <strong>{lastPage}</strong>
                   </div>
-                )}
-              </ul>
+
+                  <button className="pg-btn" onClick={onPrev} disabled={!canPrev}>
+                    ← Prev
+                  </button>
+
+                  <div className="pg-pages">
+                    {pageNumbers.map((n) => (
+                      <button
+                        key={n}
+                        className={"pg-page" + (n === page ? " active" : "")}
+                        onClick={() => setPage(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button className="pg-btn" onClick={onNext} disabled={!canNext}>
+                    Next →
+                  </button>
+                </div>
+              </>
             )}
           </section>
         </div>

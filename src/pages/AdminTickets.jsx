@@ -177,15 +177,18 @@ export default function AdminTickets() {
       );
     } catch (err) {
       console.error(err);
-      alert(
-        err?.response?.data?.message || "Gagal mengubah status tiket."
-      );
+      alert(err?.response?.data?.message || "Gagal mengubah status tiket.");
     } finally {
       setUpdatingId(null);
     }
   };
 
-  // RENDER TOMBOL AKSI PER BARIS
+  // tombol Chat (buka modal detail + chat)
+  const handleOpenChat = (ticket) => {
+    setSelectedTicket(ticket);
+  };
+
+  // RENDER TOMBOL AKSI PER BARIS (tanpa tombol Chat)
   const renderActionButtons = (t) => {
     const st = normalizeStatus(t.status);
     const idTicket = t.id_ticket ?? t.id;
@@ -205,22 +208,13 @@ export default function AdminTickets() {
 
     if (st === "in_progress") {
       return (
-        <>
-          <button
-            className="action-btn green"
-            disabled={isLoading}
-            onClick={() => handleUpdateStatus(t, "RESOLVED")}
-          >
-            {isLoading ? "Saving..." : "Mark as Resolved"}
-          </button>
-          <button
-            className="action-btn gray"
-            disabled={isLoading}
-            onClick={() => handleUpdateStatus(t, "OPEN")}
-          >
-            Reopen
-          </button>
-        </>
+        <button
+          className="action-btn green"
+          disabled={isLoading}
+          onClick={() => handleUpdateStatus(t, "RESOLVED")}
+        >
+          {isLoading ? "Saving..." : "Mark as Resolved"}
+        </button>
       );
     }
 
@@ -360,28 +354,47 @@ export default function AdminTickets() {
                         return (
                           <tr key={id || idx}>
                             <td>{id}</td>
+
                             <td className="ticket-title-cell">
                               {/* klik judul → buka modal detail + chat */}
                               <button
                                 className="link-button"
                                 onClick={() => setSelectedTicket(t)}
+                                type="button"
                               >
                                 {title}
                               </button>
                             </td>
+
                             <td>{cat}</td>
+
                             <td>
                               <span className={priorityClass(priority)}>
                                 {priority}
                               </span>
                             </td>
+
                             <td>
                               <span className={statusClass(st)}>
                                 {statusLabel(st)}
                               </span>
                             </td>
+
                             <td>{created}</td>
-                            <td>{renderActionButtons(t)}</td>
+
+                            <td>
+                              {/* tombol Chat selalu ada */}
+                              <button
+                                className="action-btn chat"
+                                type="button"
+                                onClick={() => handleOpenChat(t)}
+                              >
+                                Chat
+                              </button>
+
+                              {/* tombol status sesuai kondisi */}
+                              {renderActionButtons(t)}
+                            </td>
                           </tr>
                         );
                       })
@@ -398,7 +411,7 @@ export default function AdminTickets() {
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={closeModal}>
+            <button className="modal-close" onClick={closeModal} type="button">
               ✕
             </button>
 
@@ -429,9 +442,7 @@ export default function AdminTickets() {
                 <span>Status</span>
                 <strong>
                   <span
-                    className={statusClass(
-                      normalizeStatus(selectedTicket.status)
-                    )}
+                    className={statusClass(normalizeStatus(selectedTicket.status))}
                   >
                     {statusLabel(normalizeStatus(selectedTicket.status))}
                   </span>

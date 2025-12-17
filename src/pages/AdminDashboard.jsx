@@ -1,3 +1,4 @@
+// src/pages/AdminDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import AdminNavbar from "../components/admin/AdminNavbar";
 import AdminSidebar from "../components/admin/AdminSidebar";
@@ -21,54 +22,104 @@ export default function AdminDashboard() {
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ✅ notif dropdown state
+  const [notifOpen, setNotifOpen] = useState(false);
+
   // ===============================
   // Normalisasi status dari DB
-  // DB: OPEN / IN_PROGRESS / CLOSED / RESOLVED
-  // UI (sesuai CSS): open / progress / done
   // ===============================
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
-
     if (val === "IN_PROGRESS") return "progress";
     if (val === "CLOSED" || val === "RESOLVED") return "done";
-    return "open"; // termasuk OPEN atau value lain
+    return "open";
   };
 
-  // Helper sesuai struktur tabel ticketing
+  // Helper ticket
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
-
-  // Kolom tanggal selesai diperbaiki
-  const getCompletedAt = (t) =>
-    t.resolved_at ??
-    "-";
+  const getCompletedAt = (t) => t.resolved_at ?? "-";
 
   const getPriority = (t) => {
     const raw = String(t.priority ?? "LOW").toUpperCase(); // LOW / MEDIUM / HIGH
-    // label cantik: Low / Medium / High
     return raw.charAt(0) + raw.slice(1).toLowerCase();
+  };
+
+  const createdAtLabel = (t) => {
+    const raw = t.created_at ?? t.createdAt ?? t.date;
+    if (!raw) return "-";
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return String(raw);
+    return d.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // ===============================
+  // ACTIVITY helpers
+  // ===============================
+  const getMessage = (a) =>
+    a?.details || a?.action || a?.activity || a?.message || "-";
+
+  const getActor = (a) =>
+    a?.user?.name ||
+    a?.user_name ||
+    (a?.performed_by ? `User #${a.performed_by}` : "System");
+
+  const getTime = (a) => {
+    const raw =
+      a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
+
+    if (!raw) return "-";
+
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return String(raw);
+
+    return d.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   // ===============================
   // FETCH TICKETS
   // ===============================
+  const loadTickets = async () => {
+    try {
+      setLoadingTickets(true);
+      setErrorMsg("");
+
+      const data = await fetchAdminTickets();
+      const list = Array.isArray(data?.data) ? data.data : data;
+      setTickets(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal ambil data tickets dari server."
+      );
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        setLoadingTickets(true);
-        const data = await fetchAdminTickets();
-        const list = Array.isArray(data?.data) ? data.data : data;
-        setTickets(Array.isArray(list) ? list : []);
-      } catch (err) {
-        console.error(err);
-        setErrorMsg(
-          err.response?.data?.message ||
-            "Gagal ambil data tickets dari server."
-        );
-      } finally {
-        setLoadingTickets(false);
-      }
-    })();
+    loadTickets();
+  }, []);
+
+  // (opsional) polling biar notif kebaca tanpa refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadTickets();
+    }, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ===============================
@@ -78,11 +129,24 @@ export default function AdminDashboard() {
     (async () => {
       try {
         setLoadingActivities(true);
-        const data = await fetchAdminActivities();
-        const list = Array.isArray(data?.data) ? data.data : data;
-        setActivities(Array.isArray(list) ? list : []);
+
+        const res = await fetchAdminActivities();
+
+        let list = [];
+        if (Array.isArray(res?.data)) {
+          list = res.data;
+        } else if (Array.isArray(res?.recent_activities)) {
+          list = res.recent_activities;
+        } else if (Array.isArray(res)) {
+          list = res;
+        } else {
+          list = [];
+        }
+
+        setActivities(list.slice(0, 6));
       } catch (err) {
         console.error(err);
+        setActivities([]);
       } finally {
         setLoadingActivities(false);
       }
@@ -90,7 +154,7 @@ export default function AdminDashboard() {
   }, []);
 
   // ===============================
-  // FILTER UNTUK TABEL "RECENT TICKETS"
+  // FILTER table
   // ===============================
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
@@ -99,20 +163,31 @@ export default function AdminDashboard() {
     const title = String(getTitle(t)).toLowerCase();
     const completedAt = String(getCompletedAt(t)).toLowerCase();
 
-    return (
-      id.includes(q) ||
-      title.includes(q) ||
-      completedAt.includes(q)
-    );
+    return id.includes(q) || title.includes(q) || completedAt.includes(q);
   });
 
   // ===============================
-  // STATS KARTU ATAS
-  // Pending = OPEN, Progress = IN_PROGRESS, Done = CLOSED/RESOLVED
+  // ✅ NOTIF: ticket OPEN (belum dibuka admin)
+  // ===============================
+  const openTickets = tickets
+    .filter((t) => normalizeStatus(t.status) === "open")
+    // sort terbaru dulu biar notif enak
+    .sort((a, b) => {
+      const da = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
+      const db = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
+      return db - da;
+    })
+    // batasin biar dropdown ga kepanjangan
+    .slice(0, 8);
+
+  const openCount = tickets.filter((t) => normalizeStatus(t.status) === "open").length;
+
+  // ===============================
+  // STATS
   // ===============================
   const stats = {
     total: tickets.length,
-    pending: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
+    pending: openCount,
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
       .length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
@@ -123,7 +198,21 @@ export default function AdminDashboard() {
       <AdminSidebar active="overview" />
 
       <div className="admin-main">
-        <AdminNavbar query={query} setQuery={setQuery} user={user} />
+        {/* ✅ pass notif data ke navbar */}
+        <AdminNavbar
+          query={query}
+          setQuery={setQuery}
+          user={user}
+          notifOpen={notifOpen}
+          setNotifOpen={setNotifOpen}
+          notifCount={openCount}
+          notifItems={openTickets.map((t) => ({
+            id: getId(t),
+            title: getTitle(t),
+            priority: getPriority(t),
+            createdAt: createdAtLabel(t),
+          }))}
+        />
 
         {!!errorMsg && <div className="auth-error">{errorMsg}</div>}
 
@@ -160,7 +249,7 @@ export default function AdminDashboard() {
 
         {/* GRID: RECENT TICKETS + ACTIVITY */}
         <div className="admin-grid">
-          {/* LEFT TABLE: RECENT TICKETS */}
+          {/* LEFT TABLE */}
           <div className="admin-table-card">
             <div className="admin-table-header">
               <div>
@@ -172,55 +261,55 @@ export default function AdminDashboard() {
             {loadingTickets ? (
               <div className="loading-text">Loading tickets...</div>
             ) : (
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Completed At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((t, idx) => {
-                    const st = normalizeStatus(t.status);
-                    const priority = getPriority(t);
-                    const id = getId(t);
-                    const completedAt = getCompletedAt(t);
-
-                    return (
-                      <tr key={id || idx}>
-                        <td>{id}</td>
-                        <td>{getTitle(t)}</td>
-                        <td>
-                          <span
-                            className={`priority ${priority.toLowerCase()}`}
-                          >
-                            {priority}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${st}`}>
-                            {st === "open" && "Open"}
-                            {st === "progress" && "In Progress"}
-                            {st === "done" && "Resolved"}
-                          </span>
-                        </td>
-                        <td>{completedAt}</td>
-                      </tr>
-                    );
-                  })}
-
-                  {filtered.length === 0 && (
+              <div className="table-scroll">
+                <table className="admin-table">
+                  <thead>
                     <tr>
-                      <td colSpan="5" className="empty-row">
-                        Tidak ada ticket ditemukan.
-                      </td>
+                      <th>ID</th>
+                      <th>Title</th>
+                      <th>Priority</th>
+                      <th>Status</th>
+                      <th>Completed At</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((t, idx) => {
+                      const st = normalizeStatus(t.status);
+                      const priority = getPriority(t);
+                      const id = getId(t);
+                      const completedAt = getCompletedAt(t);
+
+                      return (
+                        <tr key={id || idx}>
+                          <td>{id}</td>
+                          <td>{getTitle(t)}</td>
+                          <td>
+                            <span className={`priority ${priority.toLowerCase()}`}>
+                              {priority}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${st}`}>
+                              {st === "open" && "Open"}
+                              {st === "progress" && "In Progress"}
+                              {st === "done" && "Resolved"}
+                            </span>
+                          </td>
+                          <td>{completedAt}</td>
+                        </tr>
+                      );
+                    })}
+
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="empty-row">
+                          Tidak ada ticket ditemukan.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -232,25 +321,40 @@ export default function AdminDashboard() {
             {loadingActivities ? (
               <div className="loading-text">Loading activity...</div>
             ) : (
-              <ul className="activity-list">
-                {activities.map((a, i) => (
-                  <li key={i} className="activity-item">
-                    <span className="activity-dot" />
-                    <div>
-                      <div className="activity-text">
-                        {a.activity ?? a.message ?? "-"}
-                      </div>
-                      <div className="activity-time">
-                        {a.time ?? a.created_at ?? "-"}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+              <div className="activity-scroll">
+                <ul className="activity-list">
+                  {activities.map((a, i) => {
+                    const message = getMessage(a);
+                    const actor = getActor(a);
+                    const time = getTime(a);
 
-                {activities.length === 0 && (
-                  <div className="empty-activity">Belum ada activity.</div>
-                )}
-              </ul>
+                    return (
+                      <li key={a?.id_log ?? i} className="activity-item">
+                        <span className="activity-dot" />
+                        <div>
+                          <div className="activity-text">{message}</div>
+                          <div className="activity-time">
+                            by {actor} • {time}
+                          </div>
+
+                          {a?.ticket && (
+                            <div className="activity-time">
+                              Ticket:{" "}
+                              <strong>
+                                {a.ticket.code_ticket || a.ticket.title}
+                              </strong>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+
+                  {activities.length === 0 && (
+                    <div className="empty-activity">Belum ada activity.</div>
+                  )}
+                </ul>
+              </div>
             )}
           </div>
         </div>

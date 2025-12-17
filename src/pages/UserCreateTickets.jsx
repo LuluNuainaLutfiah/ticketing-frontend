@@ -17,7 +17,7 @@ export default function UserCreateTicket() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [priority, setPriority] = useState(""); // low, medium, high
+  const [priority, setPriority] = useState(""); // LOW, MEDIUM, HIGH
   const [description, setDescription] = useState("");
   const [attachment, setAttachment] = useState(null);
 
@@ -35,7 +35,11 @@ export default function UserCreateTicket() {
     setErrorMsg("");
     setSuccessMsg("");
 
-    if (!title || !category || !priority || !description) {
+    const cleanTitle = title.trim();
+    const cleanCategory = category.trim();
+    const cleanDesc = description.trim();
+
+    if (!cleanTitle || !cleanCategory || !priority || !cleanDesc) {
       setErrorMsg("Harap isi semua field wajib bertanda *");
       return;
     }
@@ -44,10 +48,10 @@ export default function UserCreateTicket() {
       setSubmitting(true);
 
       const formData = new FormData();
-      formData.append("title", title);
-      formData.append("category", category);
-      formData.append("priority", priority); // sudah value low/medium/high
-      formData.append("description", description);
+      formData.append("title", cleanTitle);
+      formData.append("category", cleanCategory); // manual input
+      formData.append("priority", priority); // LOW/MEDIUM/HIGH
+      formData.append("description", cleanDesc);
 
       if (attachment) {
         formData.append("attachment", attachment);
@@ -124,18 +128,24 @@ export default function UserCreateTicket() {
                   <label className="uct-label">
                     Category <span className="uct-required">*</span>
                   </label>
-                  <select
+
+                  {/* ✅ Manual input + suggestions */}
+                  <input
+                    type="text"
                     className="uct-input"
+                    list="category-suggestions"
+                    placeholder="Type a category (e.g., Network, Email...)"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="">Select a category</option>
-                    <option value="Email">Email</option>
-                    <option value="Network">Network</option>
-                    <option value="Software">Software</option>
-                    <option value="Hardware">Hardware</option>
-                    <option value="Account">Account</option>
-                  </select>
+                    autoComplete="off"
+                  />
+                  <datalist id="category-suggestions">
+                    <option value="Email" />
+                    <option value="Network" />
+                    <option value="Software" />
+                    <option value="Hardware" />
+                    <option value="Account" />
+                  </datalist>
                 </div>
 
                 <div className="uct-form-group">
@@ -148,7 +158,6 @@ export default function UserCreateTicket() {
                     onChange={(e) => setPriority(e.target.value)}
                   >
                     <option value="">Select priority</option>
-                    {/* VALUE HARUS LOWERCASE */}
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
                     <option value="HIGH">High</option>

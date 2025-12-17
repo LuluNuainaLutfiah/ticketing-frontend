@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../services/auth";
 import "../styles/login.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const pageRef = useRef(null);
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -12,6 +14,39 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // ✅ Mouse-follow background (spotlight)
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+
+    let raf = 0;
+
+    const onMove = (e) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width) * 100;
+        const y = ((e.clientY - r.top) / r.height) * 100;
+        el.style.setProperty("--mx", `${x}%`);
+        el.style.setProperty("--my", `${y}%`);
+      });
+    };
+
+    const onLeave = () => {
+      el.style.setProperty("--mx", `50%`);
+      el.style.setProperty("--my", `35%`);
+    };
+
+    el.addEventListener("mousemove", onMove);
+    el.addEventListener("mouseleave", onLeave);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("mousemove", onMove);
+      el.removeEventListener("mouseleave", onLeave);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -39,11 +74,7 @@ export default function LoginPage() {
         data.data?.token ||
         data.data?.access_token;
 
-      const user =
-        data.user ||
-        data.data?.user ||
-        data.data ||
-        null;
+      const user = data.user || data.data?.user || data.data || null;
 
       if (!user) {
         setErrorMsg("Login berhasil tetapi data user tidak ditemukan.");
@@ -55,7 +86,7 @@ export default function LoginPage() {
         localStorage.setItem("token", token);
       }
 
-      // simpan user lengkap (ada role, user_type, npm/nik, phone, dll)
+      // simpan user lengkap
       localStorage.setItem("user", JSON.stringify(user));
 
       // role di DB: 'admin' / 'user'
@@ -64,8 +95,6 @@ export default function LoginPage() {
       if (role === "admin") {
         navigate("/admin");
       } else {
-        // sesuaikan dengan route dashboard user kamu
-        // kalau dashboard user di "/", pakai "/" di sini
         navigate("/user");
       }
     } catch (err) {
@@ -80,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-page">
+    <div ref={pageRef} className="auth-page">
       <div className="auth-bg">
         <div className="auth-card">
           <div className="auth-logo-wrapper">
@@ -136,9 +165,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="auth-link-small"
-                onClick={() =>
-                  alert("Fitur lupa password belum tersedia")
-                }
+                onClick={() => alert("Fitur lupa password belum tersedia")}
               >
                 Lupa password?
               </button>

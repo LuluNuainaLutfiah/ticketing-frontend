@@ -1,7 +1,9 @@
 .admin-page {
-  min-height: 100vh;
+  /* DIUBAH: dari min-height jadi layout fixed viewport + scroll di admin-main */
+  height: 100vh;
   background: #f3f4f6;
   display: flex;
+  overflow: hidden; /* penting */
 }
 
 /* ===== SIDEBAR ===== */
@@ -13,6 +15,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .admin-sidebar-brand {
@@ -23,10 +31,9 @@
   border-radius: 10px;
 }
 
-/* logo panjang, tidak bulat */
 .user-brand {
-  height: 50px;     /* tinggi logo di sidebar */
-  width: auto;      /* biar lebar ngikut gambar */
+  height: 50px;
+  width: auto;
   object-fit: contain;
   display: block;
   max-width: 140px;
@@ -36,11 +43,13 @@
   font-weight: 800;
   font-size: 13px;
 }
+
 .brand-sub {
   font-size: 11px;
   color: #6b7280;
 }
 
+/* ===== MENU ===== */
 .admin-menu {
   display: flex;
   flex-direction: column;
@@ -78,6 +87,11 @@
 .admin-main {
   flex: 1;
   padding: 14px 16px;
+
+  /* DITAMBAH: yang scroll hanya konten kanan */
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ===== NAVBAR / TOPBAR ===== */
@@ -93,7 +107,6 @@
   font-weight: 600;
   margin: 0;
 }
-
 
 .admin-navbar-title-sub {
   font-size: 12px;
@@ -206,7 +219,9 @@
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 12px;
-  align-items: start;
+
+  /* DIUBAH: biar card bisa punya tinggi sama dan konten di-scroll */
+  align-items: stretch;
 }
 
 /* ===== TABLE CARD ===== */
@@ -215,6 +230,11 @@
   border-radius: 12px;
   padding: 14px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+  /* DITAMBAH: supaya area tabel bisa scroll di dalam card */
+  height: 520px;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-table-header {
@@ -227,11 +247,18 @@
   margin: 0;
 }
 
-
 .admin-table-sub {
   font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
+}
+
+/* DITAMBAH: wrapper scroll untuk tabel (dipakai di JSX: <div className="table-scroll">) */
+.table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
 }
 
 .admin-table {
@@ -245,6 +272,11 @@
   padding: 8px;
   background: #f9fafb;
   color: #374151;
+
+  /* DITAMBAH: header tabel sticky saat scroll tabel */
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .admin-table td {
@@ -282,6 +314,11 @@
   border-radius: 12px;
   padding: 14px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+  /* DITAMBAH: supaya list activity bisa scroll di dalam card */
+  height: 520px;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-activity-title {
@@ -289,11 +326,20 @@
   font-weight: 600;
   margin: 0;
 }
+
 .admin-activity-sub {
   font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
   margin-bottom: 8px;
+}
+
+/* DITAMBAH: wrapper scroll untuk activity (dipakai di JSX: <div className="activity-scroll">) */
+.activity-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
 }
 
 .activity-list {
@@ -409,18 +455,177 @@
   background: #b91c1c;
 }
 
+/* ==== NOTIF DROPDOWN (AdminNavbar) ==== */
+.admin-notif {
+  position: relative;
+}
+
+.admin-notif-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-notif-bell {
+  font-size: 18px;
+}
+
+.admin-notif-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.admin-notif-panel {
+  position: absolute;
+  right: 0;
+  top: 34px;
+  width: 320px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 9999;
+}
+
+.admin-notif-panel-head {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-notif-panel-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-notif-panel-sub {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.admin-notif-panel-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.admin-notif-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: #fff;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-notif-item:hover {
+  background: #f9fafb;
+}
+
+.admin-notif-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-notif-id {
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.admin-notif-pri {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.admin-notif-pri.pri-low {
+  background: #e0f2fe;
+  color: #1d4ed8;
+}
+.admin-notif-pri.pri-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+.admin-notif-pri.pri-high {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.admin-notif-msg {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.admin-notif-time {
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: #9ca3af;
+}
+
+.admin-notif-empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.admin-notif-panel-foot {
+  width: 100%;
+  border: none;
+  background: #fff;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.admin-notif-panel-foot:hover {
+  background: #f9fafb;
+}
+
+
 /* Animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
-
 /* ===== responsive ===== */
 @media (max-width: 900px) {
   .admin-sidebar { display: none; }
   .admin-stats-4 { grid-template-columns: repeat(2,1fr); }
   .admin-grid { grid-template-columns: 1fr; }
+
+  /* DITAMBAH: di mobile, card jangan fixed tinggi biar enak */
+  .admin-table-card,
+  .admin-activity-card {
+    height: auto;
+  }
+
+  .table-scroll,
+  .activity-scroll {
+    max-height: 420px;
+  }
 }
 
 @media (max-width: 520px) {
