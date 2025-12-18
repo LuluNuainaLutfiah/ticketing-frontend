@@ -16,20 +16,15 @@ export default function TicketChatPanel({ ticket }) {
   const isAdmin = currentUser.role === "admin";
 
   const [messages, setMessages] = useState([]);
-
-  // ✅ pisahkan loading awal vs background refresh
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [sending, setSending] = useState(false);
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
 
-  const chatBodyRef = useRef(null);
+  const bodyRef = useRef(null);
 
-  // ==============================
-  // LOGIKA STATUS (boleh chat / tidak)
-  // ==============================
   const status = String(ticket?.status || "").toUpperCase();
 
   const chatLockedInfo = useMemo(() => {
@@ -52,52 +47,39 @@ export default function TicketChatPanel({ ticket }) {
 
   const canSend = !chatLockedInfo;
 
-  // ==============================
-  // AMBIL PESAN + POLLING (silent)
-  // ==============================
   useEffect(() => {
     if (!ticketId) {
       setMessages([]);
-      setInitialLoading(false);
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
 
-    const loadMessages = async ({ silent = false } = {}) => {
+    const loadMessages = async (silent = false) => {
       try {
-        // ✅ hanya tampil loading di load pertama
-        if (!silent) {
-          setInitialLoading(true);
-          setErrorMsg("");
-        }
+        if (!silent) setLoading(true);
+        setErrorMsg("");
 
         const data = await fetchTicketMessages(ticketId);
         const list = Array.isArray(data?.data) ? data.data : data;
-        const next = Array.isArray(list) ? list : [];
 
-        if (!cancelled) {
-          setMessages(next);
-        }
+        if (!cancelled) setMessages(Array.isArray(list) ? list : []);
       } catch (err) {
         console.error(err);
         if (!cancelled) {
-          // ✅ error boleh tampil, tapi tidak bikin "loading..." muncul terus
           setErrorMsg(
             err?.response?.data?.message ||
               "Gagal mengambil pesan chat dari server."
           );
         }
       } finally {
-        if (!cancelled && !silent) setInitialLoading(false);
+        if (!cancelled && !silent) setLoading(false);
       }
     };
 
-    // load pertama (boleh tampil loading)
-    loadMessages({ silent: false });
-
-    // polling tiap 5 detik (silent — tanpa ubah UI loading)
-    const interval = setInterval(() => loadMessages({ silent: true }), 5000);
+    loadMessages(false);
+    const interval = setInterval(() => loadMessages(true), 5000);
 
     return () => {
       cancelled = true;
@@ -105,18 +87,12 @@ export default function TicketChatPanel({ ticket }) {
     };
   }, [ticketId]);
 
-  // ==============================
-  // AUTO SCROLL KE BAWAH
-  // ==============================
   useEffect(() => {
-    const el = chatBodyRef.current;
+    const el = bodyRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages]);
+  }, [messages.length]);
 
-  // ==============================
-  // HANDLE INPUT FILE
-  // ==============================
   const handleFileChange = (e) => {
     const selected = Array.from(e.target.files || []);
     setFiles(selected);
@@ -127,9 +103,6 @@ export default function TicketChatPanel({ ticket }) {
     setFiles([]);
   };
 
-  // ==============================
-  // KIRIM PESAN
-  // ==============================
   const handleSend = async (e) => {
     e.preventDefault();
     if (!ticketId) return;
@@ -162,9 +135,6 @@ export default function TicketChatPanel({ ticket }) {
     }
   };
 
-  // ==============================
-  // HELPER: BUBBLE KIRI / KANAN
-  // ==============================
   const bubbleSide = (msg) => {
     const senderId = msg.id_sender ?? msg.sender?.id;
     if (!senderId) return "left";
@@ -193,11 +163,10 @@ export default function TicketChatPanel({ ticket }) {
         </p>
       </div>
 
-      {/* error tetap tampil kalau ada */}
       {errorMsg && <div className="ticket-chat-error">{errorMsg}</div>}
 
-      <div className="ticket-chat-body" ref={chatBodyRef}>
-        {initialLoading ? (
+      <div className="ticket-chat-body" ref={bodyRef}>
+        {loading ? (
           <div className="ticket-chat-empty">Loading chat...</div>
         ) : messages.length === 0 ? (
           <div className="ticket-chat-empty">
@@ -219,7 +188,6 @@ export default function TicketChatPanel({ ticket }) {
                 <div className="chat-avatar">
                   {sender[0]?.toUpperCase() || "?"}
                 </div>
-
                 <div className="chat-bubble">
                   <div className="chat-meta">
                     <span className="chat-sender">{sender}</span>
@@ -253,18 +221,14 @@ export default function TicketChatPanel({ ticket }) {
         )}
       </div>
 
-      {chatLockedInfo && (
-        <div className="ticket-chat-locked">{chatLockedInfo}</div>
-      )}
+      {chatLockedInfo && <div className="ticket-chat-locked">{chatLockedInfo}</div>}
 
       <form className="ticket-chat-form" onSubmit={handleSend}>
         <textarea
           className="ticket-chat-input"
           rows={2}
           placeholder={
-            canSend
-              ? "Tulis pesan ke admin..."
-              : "Chat dinonaktifkan untuk ticket ini."
+            canSend ? "Tulis pesan ke admin..." : "Chat dinonaktifkan untuk ticket ini."
           }
           value={text}
           onChange={(e) => setText(e.target.value)}

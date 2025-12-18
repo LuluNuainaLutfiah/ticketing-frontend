@@ -123,26 +123,25 @@ export default function AdminDashboard() {
   }, []);
 
   // ===============================
-  // FETCH ACTIVITY
+  // ✅ FETCH ACTIVITY (FIX: paginator parsing)
+  // Backend: return { message, data: { current_page, data: [], last_page, ... } }
+  // Jadi list activity = res.data.data
   // ===============================
   useEffect(() => {
     (async () => {
       try {
         setLoadingActivities(true);
 
-        const res = await fetchAdminActivities();
+        // dashboard cukup ambil page 1
+        const res = await fetchAdminActivities({ page: 1, perPage: 10 });
 
-        let list = [];
-        if (Array.isArray(res?.data)) {
-          list = res.data;
-        } else if (Array.isArray(res?.recent_activities)) {
-          list = res.recent_activities;
-        } else if (Array.isArray(res)) {
-          list = res;
-        } else {
-          list = [];
-        }
+        // res = { message, data: paginatorObject }
+        const paginator = res?.data;
 
+        // list = paginator.data (array)
+        const list = Array.isArray(paginator?.data) ? paginator.data : [];
+
+        // dashboard ringkas: 6 item aja
         setActivities(list.slice(0, 6));
       } catch (err) {
         console.error(err);
@@ -171,16 +170,16 @@ export default function AdminDashboard() {
   // ===============================
   const openTickets = tickets
     .filter((t) => normalizeStatus(t.status) === "open")
-    // sort terbaru dulu biar notif enak
     .sort((a, b) => {
       const da = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
       const db = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
       return db - da;
     })
-    // batasin biar dropdown ga kepanjangan
     .slice(0, 8);
 
-  const openCount = tickets.filter((t) => normalizeStatus(t.status) === "open").length;
+  const openCount = tickets.filter(
+    (t) => normalizeStatus(t.status) === "open"
+  ).length;
 
   // ===============================
   // STATS
@@ -198,7 +197,6 @@ export default function AdminDashboard() {
       <AdminSidebar active="overview" />
 
       <div className="admin-main">
-        {/* ✅ pass notif data ke navbar */}
         <AdminNavbar
           query={query}
           setQuery={setQuery}

@@ -225,6 +225,10 @@
   background-color: #3b82f6;
 }
 
+.filter-chip .dot.in-review {
+  background-color: #fb24e9;
+}
+
 .filter-chip .dot.in-progress {
   background-color: #f59e0b;
 }
