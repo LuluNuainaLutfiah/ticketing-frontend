@@ -18,7 +18,6 @@ export default function AdminSidebar({ active = "overview" }) {
   return (
     <>
       <aside className="admin-sidebar">
-        {/* Brand */}
         <div className="admin-sidebar-brand">
           <img src={logo} alt="Logo" className="user-brand" />
           <div className="admin-sidebar-brandtext">
@@ -48,9 +47,7 @@ export default function AdminSidebar({ active = "overview" }) {
         </button>
       </aside>
 
-      {/* ====================== */}
       {/* MODAL CONFIRM LOGOUT */}
-      {/* ====================== */}
       {showConfirm && (
         <div className="logout-modal-overlay">
           <div className="logout-modal">

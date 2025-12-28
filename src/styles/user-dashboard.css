@@ -1,7 +1,3 @@
-/* =========================================================
-   USER PAGE LAYOUT (FIX: sidebar diem, konten doang yang scroll)
-========================================================= */
-
 /* jangan set body overflow hidden global di sini,
    kita pakai class khusus biar login/register aman */
 .no-body-scroll {

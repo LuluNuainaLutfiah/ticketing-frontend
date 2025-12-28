@@ -11,7 +11,6 @@ export default function Navbar() {
     <header className="navbar-wrapper">
       <div className="navbar">
         <div className="navbar-left">
-          {/* Placeholder logo bulat hijau */}
           <div className="navbar-logo" />
           <img src={logoUika} alt="logo UIKA" className="brand-logo" />
           <div className="navbar-title">

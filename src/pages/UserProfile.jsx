@@ -1,4 +1,3 @@
-// src/pages/UserProfile.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-profile.css";
@@ -18,7 +17,6 @@ export default function UserProfile() {
   const [firstName, ...restName] = fullName.split(" ");
   const lastName = restName.join(" ");
 
-  // inisial avatar kalau belum ada foto
   const initials =
     fullName
       .split(" ")
@@ -42,9 +40,6 @@ export default function UserProfile() {
   const email = user.email || "-";
   const phone = user.phone || "+62";
 
-  // =========================
-  // ✅ STATS (Total / Active / Resolved Rate)
-  // =========================
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState("");
 
@@ -54,7 +49,6 @@ export default function UserProfile() {
 
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
-    // status di DB lu: OPEN / IN_REVIEW / IN_PROGRESS / RESOLVED (+ mungkin CLOSED)
     if (v === "RESOLVED" || v === "CLOSED") return "done";
     if (v === "IN_PROGRESS") return "progress";
     if (v === "IN_REVIEW") return "review";
@@ -69,10 +63,6 @@ export default function UserProfile() {
 
         const res = await fetchUserTickets();
 
-        // aman untuk beberapa bentuk response:
-        // 1) { data: [...] }
-        // 2) [...]
-        // 3) { data: { data: [...] } } (kadang kalau pakai paginator)
         const raw =
           (Array.isArray(res?.data) && res.data) ||
           (Array.isArray(res) && res) ||
@@ -92,13 +82,13 @@ export default function UserProfile() {
         setTotalTickets(total);
         setActiveTickets(active);
 
-        // Resolved Rate = persentase ticket yang selesai
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         setResolvedRate(pct);
       } catch (err) {
         console.error(err);
         setStatsError(
-          err?.response?.data?.message || "Gagal mengambil statistik ticket."
+          err?.response?.data?.message ||
+            "Gagal mengambil statistik tiket."
         );
         setTotalTickets(0);
         setActiveTickets(0);
@@ -120,8 +110,6 @@ export default function UserProfile() {
     const reader = new FileReader();
     reader.onload = () => setAvatarPreview(reader.result);
     reader.readAsDataURL(file);
-
-    // NOTE: nanti bisa ditambah API upload ke backend
   };
 
   return (
@@ -129,10 +117,10 @@ export default function UserProfile() {
       <UserSidebar active="profile" />
 
       <main className="user-main up-main">
-        {/* HEADER ATAS */}
+        {/* HEADER */}
         <header className="up-header">
-          <h1 className="up-header-title">My Profile</h1>
-          <p className="up-header-sub">Manage your account settings.</p>
+          <h1 className="up-header-title">Profil Saya</h1>
+          <p className="up-header-sub">Kelola informasi dan akun Anda.</p>
         </header>
 
         {statsError && <div className="auth-error">{statsError}</div>}
@@ -151,7 +139,9 @@ export default function UserProfile() {
                 </div>
 
                 <div className="up-user-info">
-                  <div className="up-user-name">{fullName || "User Name"}</div>
+                  <div className="up-user-name">
+                    {fullName || "Nama Pengguna"}
+                  </div>
                   <div className="up-user-email">{email}</div>
 
                   <div className="up-user-tags">
@@ -162,10 +152,10 @@ export default function UserProfile() {
                     )}
                     {role && (
                       <span className="up-tag">
-                        {role === "admin" ? "Admin" : "User"}
+                        {role === "admin" ? "Admin" : "Pengguna"}
                       </span>
                     )}
-                    <span className="up-tag up-tag-active">Active</span>
+                    <span className="up-tag up-tag-active">Aktif</span>
                   </div>
                 </div>
               </div>
@@ -184,7 +174,7 @@ export default function UserProfile() {
                 type="button"
                 onClick={handleChangePhotoClick}
               >
-                Change Photo
+                Ganti Foto
               </button>
             </div>
 
@@ -193,32 +183,32 @@ export default function UserProfile() {
                 <div className="up-stat-value">
                   {statsLoading ? "..." : totalTickets}
                 </div>
-                <div className="up-stat-label">Total Tickets</div>
+                <div className="up-stat-label">Total Tiket</div>
               </div>
 
               <div className="up-stat-item">
                 <div className="up-stat-value">
                   {statsLoading ? "..." : activeTickets}
                 </div>
-                <div className="up-stat-label">Active Tickets</div>
+                <div className="up-stat-label">Tiket Aktif</div>
               </div>
 
               <div className="up-stat-item">
                 <div className="up-stat-value">
                   {statsLoading ? "..." : `${resolvedRate}%`}
                 </div>
-                <div className="up-stat-label">Resolved Rate</div>
+                <div className="up-stat-label">Tingkat Penyelesaian</div>
               </div>
             </div>
           </section>
 
-          {/* CARD BAWAH – INFO PRIBADI */}
+          {/* INFORMASI PRIBADI */}
           <section className="up-card up-card-form">
-            <div className="up-section-title">Personal Information</div>
+            <div className="up-section-title">Informasi Pribadi</div>
 
             <div className="up-form-grid">
               <div className="up-form-group">
-                <label className="up-label">First Name</label>
+                <label className="up-label">Nama Depan</label>
                 <input
                   className="up-input"
                   type="text"
@@ -228,7 +218,7 @@ export default function UserProfile() {
               </div>
 
               <div className="up-form-group">
-                <label className="up-label">Last Name</label>
+                <label className="up-label">Nama Belakang</label>
                 <input
                   className="up-input"
                   type="text"
@@ -238,7 +228,7 @@ export default function UserProfile() {
               </div>
 
               <div className="up-form-group up-form-full">
-                <label className="up-label">Email Address</label>
+                <label className="up-label">Alamat Email</label>
                 <input
                   className="up-input"
                   type="email"
@@ -246,12 +236,12 @@ export default function UserProfile() {
                   disabled
                 />
                 <div className="up-hint">
-                  Contact IT support to change your email.
+                  Hubungi tim IT untuk mengubah alamat email.
                 </div>
               </div>
 
               <div className="up-form-group up-form-full">
-                <label className="up-label">Pengguna</label>
+                <label className="up-label">Status Pengguna</label>
                 <input
                   className="up-input"
                   type="text"
@@ -271,7 +261,7 @@ export default function UserProfile() {
               </div>
 
               <div className="up-form-group up-form-full">
-                <label className="up-label">Phone Number</label>
+                <label className="up-label">Nomor Telepon</label>
                 <input
                   className="up-input"
                   type="text"

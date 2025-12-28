@@ -1,4 +1,3 @@
-// src/pages/UserTicketDetail.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";

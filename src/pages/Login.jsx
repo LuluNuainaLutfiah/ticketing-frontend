@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ Mouse-follow background (spotlight)
   useEffect(() => {
     const el = pageRef.current;
     if (!el) return;
@@ -67,7 +66,6 @@ export default function LoginPage() {
         password: form.password,
       });
 
-      // --- Normalisasi response dari backend ---
       const token =
         data.token ||
         data.access_token ||
@@ -77,7 +75,7 @@ export default function LoginPage() {
       const user = data.user || data.data?.user || data.data || null;
 
       if (!user) {
-        setErrorMsg("Login berhasil tetapi data user tidak ditemukan.");
+        setErrorMsg("Login berhasil, tetapi data pengguna tidak ditemukan.");
         setLoading(false);
         return;
       }
@@ -86,10 +84,8 @@ export default function LoginPage() {
         localStorage.setItem("token", token);
       }
 
-      // simpan user lengkap
       localStorage.setItem("user", JSON.stringify(user));
 
-      // role di DB: 'admin' / 'user'
       const role = user.role === "admin" ? "admin" : "user";
 
       if (role === "admin") {
@@ -101,7 +97,7 @@ export default function LoginPage() {
       console.error(err);
       setErrorMsg(
         err.response?.data?.message ||
-          "Login gagal. Periksa email & password kamu."
+          "Login gagal. Silakan periksa email dan kata sandi Anda."
       );
     } finally {
       setLoading(false);
@@ -116,14 +112,14 @@ export default function LoginPage() {
             <div className="auth-logo" />
           </div>
 
-          <div className="auth-title-centered">Welcome Back !</div>
+          <div className="auth-title-centered">Selamat Datang Kembali!</div>
 
           {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="email">
-                Email Address
+                Alamat Email
               </label>
               <input
                 id="email"
@@ -138,7 +134,7 @@ export default function LoginPage() {
 
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="password">
-                Password
+                Kata Sandi
               </label>
               <input
                 id="password"
@@ -165,20 +161,19 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="auth-link-small"
-                onClick={() => alert("Fitur lupa password belum tersedia")}
+                onClick={() => alert("Fitur lupa kata sandi belum tersedia")}
               >
-                Lupa password?
+                Lupa kata sandi?
               </button>
             </div>
 
             <button className="auth-btn" type="submit" disabled={loading}>
-              {loading ? "Memproses..." : "LOGIN"}
+              {loading ? "Memproses..." : "MASUK"}
             </button>
           </form>
 
           <div className="auth-bottom-box">
-            Apakah anda tidak memiliki akun?{" "}
-            <Link to="/register">Register disini</Link>
+            Belum punya akun? <Link to="/register">Daftar di sini</Link>
           </div>
         </div>
       </div>

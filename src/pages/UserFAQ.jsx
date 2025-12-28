@@ -8,20 +8,20 @@ export default function UserFAQ() {
   const faqs = useMemo(
     () => [
       {
-        q: "Bagaimana cara membuat ticket?",
-        a: "Masuk ke menu Create Ticket, isi judul, kategori, prioritas, dan deskripsi, lalu Submit.",
+        q: "Bagaimana cara membuat tiket?",
+        a: "Buka menu Buat Tiket, isi judul, kategori, prioritas, dan deskripsi, lalu klik Kirim.",
       },
       {
-        q: "Kenapa chat ticket saya terkunci?",
-        a: "Chat bisa terkunci tergantung status ticket (misal menunggu admin/RESOLVED) sesuai aturan sistem.",
+        q: "Kenapa chat tiket saya terkunci?",
+        a: "Chat dapat terkunci tergantung status tiket (misalnya menunggu admin atau tiket sudah selesai/RESOLVED) sesuai aturan sistem.",
       },
       {
-        q: "File apa saja yang bisa diupload?",
-        a: "Umumnya PNG, JPG, dan PDF (maksimal sesuai limit sistem kamu).",
+        q: "File apa saja yang bisa diunggah?",
+        a: "Umumnya PNG, JPG, dan PDF (maksimal sesuai batas ukuran yang ditentukan sistem).",
       },
       {
-        q: "Berapa lama respon support?",
-        a: "Tergantung antrean dan prioritas. Prioritas HIGH biasanya lebih cepat diproses.",
+        q: "Berapa lama respons dari tim support?",
+        a: "Tergantung antrean dan prioritas. Tiket berprioritas HIGH biasanya diproses lebih cepat.",
       },
     ],
     []

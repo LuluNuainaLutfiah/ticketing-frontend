@@ -1,4 +1,3 @@
-// src/pages/UserDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
@@ -114,9 +113,9 @@ export default function UserDashboard() {
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
-    if (st === "progress") return "In Progress";
-    if (st === "done") return "Resolved";
-    return "Open";
+    if (st === "progress") return "Sedang Diproses";
+    if (st === "done") return "Selesai";
+    return "Terbuka";
   };
 
   return (
@@ -138,38 +137,38 @@ export default function UserDashboard() {
         <div className="user-stats">
           <div className="user-stat-card">
             <div className="user-stat-icon icon-open">📩</div>
-            <div className="user-stat-title">Open Tickets</div>
-            <div className="user-stat-sub">Waiting for response</div>
-            <div className="user-stat-foot">{stats.open} tickets</div>
+            <div className="user-stat-title">Tiket Terbuka</div>
+            <div className="user-stat-sub">Menunggu respons</div>
+            <div className="user-stat-foot">{stats.open} tiket</div>
           </div>
 
           <div className="user-stat-card">
             <div className="user-stat-icon icon-progress">⏳</div>
-            <div className="user-stat-title">In Progress</div>
-            <div className="user-stat-sub">Being worked on</div>
-            <div className="user-stat-foot">{stats.progress} tickets</div>
+            <div className="user-stat-title">Sedang Diproses</div>
+            <div className="user-stat-sub">Sedang ditangani</div>
+            <div className="user-stat-foot">{stats.progress} tiket</div>
           </div>
 
           <div className="user-stat-card">
             <div className="user-stat-icon icon-done">✅</div>
-            <div className="user-stat-title">Resolved</div>
-            <div className="user-stat-sub">Completed tickets</div>
-            <div className="user-stat-foot">{stats.done} tickets</div>
+            <div className="user-stat-title">Selesai</div>
+            <div className="user-stat-sub">Tiket telah selesai</div>
+            <div className="user-stat-foot">{stats.done} tiket</div>
           </div>
         </div>
 
         {/* NEED HELP BANNER */}
         <section className="needhelp">
           <div className="needhelp-text">
-            <div className="needhelp-title">Need Help?</div>
+            <div className="needhelp-title">Butuh Bantuan?</div>
             <div className="needhelp-sub">
-              Create a new support ticket and our team will assist you
+              Buat tiket bantuan baru dan tim kami akan membantu Anda
             </div>
             <button
               className="needhelp-btn"
               onClick={() => navigate("/user/tickets/create")}
             >
-              + Create New Ticket
+              + Buat Tiket Baru
             </button>
           </div>
           <div className="needhelp-icon">🎫</div>
@@ -179,14 +178,14 @@ export default function UserDashboard() {
         <section className="recent-card">
           <div className="recent-header">
             <div>
-              <div className="recent-title">Recent Tickets</div>
-              <div className="recent-sub">Your latest support requests</div>
+              <div className="recent-title">Tiket Terbaru</div>
+              <div className="recent-sub">Permintaan bantuan terbaru Anda</div>
             </div>
             <button
               className="recent-viewall"
               onClick={() => navigate("/user/tickets")}
             >
-              View All
+              Lihat Semua
             </button>
           </div>
 
@@ -194,26 +193,26 @@ export default function UserDashboard() {
             <table className="recent-table">
               <thead>
                 <tr>
-                  <th>Ticket ID</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Priority</th>
+                  <th>ID Tiket</th>
+                  <th>Judul</th>
+                  <th>Kategori</th>
+                  <th>Prioritas</th>
                   <th>Status</th>
-                  <th>Last Update</th>
-                  <th>Action</th>
+                  <th>Pembaruan Terakhir</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingTickets ? (
                   <tr>
                     <td colSpan="7" className="empty-row">
-                      Loading tickets...
+                      Memuat tiket...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-row">
-                      No tickets found.
+                      Tidak ada tiket ditemukan.
                     </td>
                   </tr>
                 ) : (
@@ -246,7 +245,7 @@ export default function UserDashboard() {
                             className="view-btn"
                             onClick={() => setSelectedTicket(t)}
                           >
-                            View
+                            Lihat
                           </button>
                         </td>
                       </tr>
@@ -258,44 +257,42 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        {/* INFO CARDS */}
         <section className="info-grid">
           <div className="info-card">
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
-            <div className="info-sub">Find answers to common questions</div>
+            <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
             <button
               className="info-link-btn"
               onClick={() => navigate("/user/faq")}
             >
-              Browse FAQ →
+              Lihat FAQ →
             </button>
           </div>
 
           <div className="info-card">
             <div className="info-icon info-green">🗓️</div>
-            <div className="info-title">Service Hours</div>
-            <div className="info-sub">Monday - Friday: 8 AM - 6 PM</div>
+            <div className="info-title">Jam Layanan</div>
+            <div className="info-sub">Senin - Jumat: 08.00 - 18.00</div>
             <button
               className="info-link-btn"
               onClick={() => navigate("/user/service-hours")}
             >
-              View Schedule →
+              Lihat Jadwal →
             </button>
           </div>
 
-          {/* ✅ REPLACED: Live Chat -> How It Works */}
           <div className="info-card">
             <div className="info-icon info-purple">📘</div>
-            <div className="info-title">How It Works</div>
+            <div className="info-title">Cara Kerja</div>
             <div className="info-sub">
-              Understand how your ticket is processed step by step
+              Pahami bagaimana tiket Anda diproses langkah demi langkah
             </div>
             <button
               className="info-link-btn"
               onClick={() => navigate("/user/how-it-works")}
             >
-              View Guide →
+              Lihat Panduan →
             </button>
           </div>
         </section>
@@ -309,7 +306,7 @@ export default function UserDashboard() {
               ✕
             </button>
 
-            <div className="modal-title">Ticket Detail</div>
+            <div className="modal-title">Detail Tiket</div>
             <div className="modal-sub">
               ID:{" "}
               {selectedTicket.code_ticket ??
@@ -319,17 +316,17 @@ export default function UserDashboard() {
 
             <div className="modal-body">
               <div className="modal-row">
-                <span>Title</span>
+                <span>Judul</span>
                 <strong>{selectedTicket.title ?? selectedTicket.subject}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Category</span>
+                <span>Kategori</span>
                 <strong>{selectedTicket.category ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Priority</span>
+                <span>Prioritas</span>
                 <strong>
                   <span
                     className={priorityClass(selectedTicket.priority ?? "LOW")}
@@ -349,17 +346,17 @@ export default function UserDashboard() {
               </div>
 
               <div className="modal-row">
-                <span>Resolved</span>
+                <span>Selesai</span>
                 <strong>{resolvedLabel(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Created At</span>
+                <span>Dibuat Pada</span>
                 <strong>{createdLabel(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Last Update</span>
+                <span>Pembaruan Terakhir</span>
                 <strong>
                   {selectedTicket.updated_at ??
                     selectedTicket.updatedAt ??
@@ -369,7 +366,7 @@ export default function UserDashboard() {
               </div>
 
               <div className="modal-desc">
-                <div className="modal-desc-title">Description</div>
+                <div className="modal-desc-title">Deskripsi</div>
                 <p>{selectedTicket.description || "-"}</p>
               </div>
 

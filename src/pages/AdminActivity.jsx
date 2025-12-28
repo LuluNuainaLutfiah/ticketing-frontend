@@ -1,15 +1,13 @@
-// src/pages/AdminActivity.jsx
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
-import api from "../services/api"; // ✅ pakai axios instance lu (sesuaikan path kalau beda)
+import api from "../services/api"; 
 
 export default function AdminActivity() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ pagination state (server-side)
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const perPage = 10;
@@ -19,12 +17,10 @@ export default function AdminActivity() {
       if (!silent) setLoading(true);
       setErrorMsg("");
 
-      // ✅ route sesuai contoh lu
       const res = await api.get(
         `/admin/dashboard/recent-activities?page=${targetPage}&per_page=${perPage}`
       );
 
-      // backend lu: { message, data: paginator }
       const paginator = res?.data?.data;
 
       const list = Array.isArray(paginator?.data) ? paginator.data : [];
@@ -45,26 +41,22 @@ export default function AdminActivity() {
     }
   };
 
-  // load setiap page berubah
   useEffect(() => {
     loadActivities({ silent: false, targetPage: page });
 
-    // auto refresh 10 detik (tetep di page yang sama)
     const interval = setInterval(() => {
       loadActivities({ silent: true, targetPage: page });
     }, 10000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // helpers
   const getMessage = (a) => a?.details || a?.action || a?.activity || "-";
 
   const getActor = (a) =>
     a?.user?.name ||
     a?.user_name ||
-    (a?.performed_by ? `User #${a.performed_by}` : "System");
+    (a?.performed_by ? `Pengguna #${a.performed_by}` : "Sistem");
 
   const getTime = (a) => {
     const raw =
@@ -87,14 +79,12 @@ export default function AdminActivity() {
   const getTicketRef = (a) =>
     a?.ticket?.code_ticket || a?.ticket?.title || a?.ticket_code || "-";
 
-  // ✅ next/prev logic (sesuai yang lu tulis)
   const canPrev = page > 1;
   const canNext = page < lastPage;
 
   const onNext = () => canNext && setPage((p) => p + 1);
   const onPrev = () => canPrev && setPage((p) => p - 1);
 
-  // tombol angka 5 biji biar cakep
   const pageNumbers = useMemo(() => {
     const total = lastPage || 1;
     const curr = page || 1;
@@ -115,11 +105,10 @@ export default function AdminActivity() {
 
       <main className="admin-main">
         <div className="activity-wrapper">
-          {/* HEADER */}
           <header className="activity-header">
-            <h1 className="activity-header-title">Activity Log</h1>
+            <h1 className="activity-header-title">Log Aktivitas</h1>
             <p className="activity-header-sub">
-              Track system activity and changes
+              Pantau aktivitas dan perubahan pada sistem
             </p>
           </header>
 
@@ -128,9 +117,9 @@ export default function AdminActivity() {
           <section className="activity-card">
             <div className="activity-card-head">
               <div>
-                <div className="activity-card-title">System Activity Log</div>
+                <div className="activity-card-title">Log Aktivitas Sistem</div>
                 <div className="activity-card-sub">
-                  Recent updates & logs from system
+                  Pembaruan dan catatan terbaru dari sistem
                 </div>
               </div>
 
@@ -143,26 +132,25 @@ export default function AdminActivity() {
                   }
                   disabled={loading}
                 >
-                  {loading ? "Refreshing..." : "Refresh"}
+                  {loading ? "Memuat ulang..." : "Muat Ulang"}
                 </button>
               </div>
             </div>
 
             {loading ? (
-              <div className="activity-loading">Loading activity...</div>
+              <div className="activity-loading">Memuat aktivitas...</div>
             ) : rows.length === 0 ? (
-              <div className="activity-empty">Tidak ada activity log.</div>
+              <div className="activity-empty">Tidak ada log aktivitas.</div>
             ) : (
               <>
-                {/* TABLE */}
                 <div className="activity-table-wrap">
                   <table className="activity-table">
                     <thead>
                       <tr>
-                        <th>Time</th>
-                        <th>Actor</th>
-                        <th>Message</th>
-                        <th>Ticket</th>
+                        <th>Waktu</th>
+                        <th>Pelaku</th>
+                        <th>Pesan</th>
+                        <th>Tiket</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -178,14 +166,14 @@ export default function AdminActivity() {
                   </table>
                 </div>
 
-                {/* PAGINATION */}
                 <div className="activity-pagination">
                   <div className="pg-info">
-                    Page <strong>{page}</strong> of <strong>{lastPage}</strong>
+                    Halaman <strong>{page}</strong> dari{" "}
+                    <strong>{lastPage}</strong>
                   </div>
 
                   <button className="pg-btn" onClick={onPrev} disabled={!canPrev}>
-                    ← Prev
+                    ← Sebelumnya
                   </button>
 
                   <div className="pg-pages">
@@ -201,7 +189,7 @@ export default function AdminActivity() {
                   </div>
 
                   <button className="pg-btn" onClick={onNext} disabled={!canNext}>
-                    Next →
+                    Berikutnya →
                   </button>
                 </div>
               </>

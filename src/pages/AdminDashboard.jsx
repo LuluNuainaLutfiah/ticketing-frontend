@@ -1,4 +1,3 @@
-// src/pages/AdminDashboard.jsx
 import { useEffect, useMemo, useState } from "react";
 import AdminNavbar from "../components/admin/AdminNavbar";
 import AdminSidebar from "../components/admin/AdminSidebar";
@@ -22,12 +21,8 @@ export default function AdminDashboard() {
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ✅ notif dropdown state
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // ===============================
-  // Normalisasi status dari DB
-  // ===============================
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
     if (val === "IN_PROGRESS") return "progress";
@@ -35,13 +30,12 @@ export default function AdminDashboard() {
     return "open";
   };
 
-  // Helper ticket
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
   const getCompletedAt = (t) => t.resolved_at ?? "-";
 
   const getPriority = (t) => {
-    const raw = String(t.priority ?? "LOW").toUpperCase(); // LOW / MEDIUM / HIGH
+    const raw = String(t.priority ?? "LOW").toUpperCase();
     return raw.charAt(0) + raw.slice(1).toLowerCase();
   };
 
@@ -59,16 +53,13 @@ export default function AdminDashboard() {
     });
   };
 
-  // ===============================
-  // ACTIVITY helpers
-  // ===============================
   const getMessage = (a) =>
     a?.details || a?.action || a?.activity || a?.message || "-";
 
   const getActor = (a) =>
     a?.user?.name ||
     a?.user_name ||
-    (a?.performed_by ? `User #${a.performed_by}` : "System");
+    (a?.performed_by ? `Pengguna #${a.performed_by}` : "Sistem");
 
   const getTime = (a) => {
     const raw =
@@ -88,9 +79,6 @@ export default function AdminDashboard() {
     });
   };
 
-  // ===============================
-  // FETCH TICKETS
-  // ===============================
   const loadTickets = async () => {
     try {
       setLoadingTickets(true);
@@ -102,7 +90,8 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       setErrorMsg(
-        err?.response?.data?.message || "Gagal ambil data tickets dari server."
+        err?.response?.data?.message ||
+          "Gagal mengambil data tiket dari server."
       );
     } finally {
       setLoadingTickets(false);
@@ -113,35 +102,22 @@ export default function AdminDashboard() {
     loadTickets();
   }, []);
 
-  // (opsional) polling biar notif kebaca tanpa refresh
   useEffect(() => {
     const interval = setInterval(() => {
       loadTickets();
     }, 15000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ===============================
-  // ✅ FETCH ACTIVITY (FIX: paginator parsing)
-  // Backend: return { message, data: { current_page, data: [], last_page, ... } }
-  // Jadi list activity = res.data.data
-  // ===============================
   useEffect(() => {
     (async () => {
       try {
         setLoadingActivities(true);
 
-        // dashboard cukup ambil page 1
         const res = await fetchAdminActivities({ page: 1, perPage: 10 });
-
-        // res = { message, data: paginatorObject }
         const paginator = res?.data;
-
-        // list = paginator.data (array)
         const list = Array.isArray(paginator?.data) ? paginator.data : [];
 
-        // dashboard ringkas: 6 item aja
         setActivities(list.slice(0, 6));
       } catch (err) {
         console.error(err);
@@ -152,9 +128,6 @@ export default function AdminDashboard() {
     })();
   }, []);
 
-  // ===============================
-  // FILTER table
-  // ===============================
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
 
@@ -165,9 +138,6 @@ export default function AdminDashboard() {
     return id.includes(q) || title.includes(q) || completedAt.includes(q);
   });
 
-  // ===============================
-  // ✅ NOTIF: ticket OPEN (belum dibuka admin)
-  // ===============================
   const openTickets = tickets
     .filter((t) => normalizeStatus(t.status) === "open")
     .sort((a, b) => {
@@ -181,9 +151,6 @@ export default function AdminDashboard() {
     (t) => normalizeStatus(t.status) === "open"
   ).length;
 
-  // ===============================
-  // STATS
-  // ===============================
   const stats = {
     total: tickets.length,
     pending: openCount,
@@ -214,60 +181,59 @@ export default function AdminDashboard() {
 
         {!!errorMsg && <div className="auth-error">{errorMsg}</div>}
 
-        {/* STATS ROW */}
         <div className="admin-stats admin-stats-4">
           <div className="stat-card">
             <div className="stat-icon icon-total">📌</div>
-            <div className="stat-title">Total Tickets</div>
+            <div className="stat-title">Total Tiket</div>
             <div className="stat-value">{stats.total}</div>
-            <div className="stat-note">+12% from last month</div>
+            <div className="stat-note">+12% dari bulan lalu</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon icon-pending">⌛</div>
-            <div className="stat-title">Pending</div>
+            <div className="stat-title">Menunggu</div>
             <div className="stat-value">{stats.pending}</div>
-            <div className="stat-note">Requires attention</div>
+            <div className="stat-note">Perlu ditindaklanjuti</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon icon-progress">⚡</div>
-            <div className="stat-title">In Progress</div>
+            <div className="stat-title">Sedang Diproses</div>
             <div className="stat-value">{stats.progress}</div>
-            <div className="stat-note">Being worked on</div>
+            <div className="stat-note">Sedang dikerjakan</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon icon-done">✅</div>
-            <div className="stat-title">Resolved</div>
+            <div className="stat-title">Selesai</div>
             <div className="stat-value">{stats.done}</div>
-            <div className="stat-note">+8% resolution rate</div>
+            <div className="stat-note">+8% tingkat penyelesaian</div>
           </div>
         </div>
 
-        {/* GRID: RECENT TICKETS + ACTIVITY */}
         <div className="admin-grid">
-          {/* LEFT TABLE */}
           <div className="admin-table-card">
             <div className="admin-table-header">
               <div>
-                <div className="admin-table-title">Recent Tickets</div>
-                <div className="admin-table-sub">Latest support requests</div>
+                <div className="admin-table-title">Tiket Terbaru</div>
+                <div className="admin-table-sub">
+                  Permintaan bantuan terbaru
+                </div>
               </div>
             </div>
 
             {loadingTickets ? (
-              <div className="loading-text">Loading tickets...</div>
+              <div className="loading-text">Memuat data tiket...</div>
             ) : (
               <div className="table-scroll">
                 <table className="admin-table">
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Title</th>
-                      <th>Priority</th>
+                      <th>Judul</th>
+                      <th>Prioritas</th>
                       <th>Status</th>
-                      <th>Completed At</th>
+                      <th>Tanggal Selesai</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,15 +248,17 @@ export default function AdminDashboard() {
                           <td>{id}</td>
                           <td>{getTitle(t)}</td>
                           <td>
-                            <span className={`priority ${priority.toLowerCase()}`}>
+                            <span
+                              className={`priority ${priority.toLowerCase()}`}
+                            >
                               {priority}
                             </span>
                           </td>
                           <td>
                             <span className={`badge ${st}`}>
-                              {st === "open" && "Open"}
-                              {st === "progress" && "In Progress"}
-                              {st === "done" && "Resolved"}
+                              {st === "open" && "Terbuka"}
+                              {st === "progress" && "Diproses"}
+                              {st === "done" && "Selesai"}
                             </span>
                           </td>
                           <td>{completedAt}</td>
@@ -301,7 +269,7 @@ export default function AdminDashboard() {
                     {filtered.length === 0 && (
                       <tr>
                         <td colSpan="5" className="empty-row">
-                          Tidak ada ticket ditemukan.
+                          Tidak ada tiket ditemukan.
                         </td>
                       </tr>
                     )}
@@ -311,13 +279,14 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* RIGHT ACTIVITY */}
           <div className="admin-activity-card">
-            <div className="admin-activity-title">Recent Activity</div>
-            <div className="admin-activity-sub">Latest system updates</div>
+            <div className="admin-activity-title">Aktivitas Terbaru</div>
+            <div className="admin-activity-sub">
+              Pembaruan sistem terbaru
+            </div>
 
             {loadingActivities ? (
-              <div className="loading-text">Loading activity...</div>
+              <div className="loading-text">Memuat aktivitas...</div>
             ) : (
               <div className="activity-scroll">
                 <ul className="activity-list">
@@ -332,12 +301,12 @@ export default function AdminDashboard() {
                         <div>
                           <div className="activity-text">{message}</div>
                           <div className="activity-time">
-                            by {actor} • {time}
+                            oleh {actor} • {time}
                           </div>
 
                           {a?.ticket && (
                             <div className="activity-time">
-                              Ticket:{" "}
+                              Tiket:{" "}
                               <strong>
                                 {a.ticket.code_ticket || a.ticket.title}
                               </strong>
@@ -349,7 +318,9 @@ export default function AdminDashboard() {
                   })}
 
                   {activities.length === 0 && (
-                    <div className="empty-activity">Belum ada activity.</div>
+                    <div className="empty-activity">
+                      Belum ada aktivitas.
+                    </div>
                   )}
                 </ul>
               </div>

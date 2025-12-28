@@ -615,12 +615,6 @@
 }
 
 
-/* ========================================================= */
-/* FIX FINAL: HILANGKAN SCROLL PANJANG DI MODAL (CUMA CHAT)   */
-/* - Jangan ubah desain tabel                                */
-/* - Modal tidak kepanjangan                                 */
-/* ========================================================= */
-
 /* overlay jangan scroll */
 .modal-overlay {
   overflow: hidden;
@@ -649,11 +643,6 @@
   min-height: 0;
   display: flex;
 }
-/* =========================================
-   WHATSAPP STYLE:
-   - scroll hanya di isi chat
-   - form kirim chat tetap di bawah
-   ========================================= */
 
 .modal-chat-wrapper .ticket-chat {
   display: flex !important;
@@ -662,7 +651,6 @@
   min-height: 0 !important;
 }
 
-/* ✅ ini yang scroll */
 .modal-chat-wrapper .ticket-chat-body {
   flex: 1 1 auto !important;
   min-height: 0 !important;
@@ -670,7 +658,6 @@
   max-height: none !important;
 }
 
-/* ✅ form tetap di bawah (tidak scroll) */
 .modal-chat-wrapper .ticket-chat-form {
   flex: 0 0 auto !important;
   margin-top: 8px;
@@ -678,12 +665,6 @@
   padding-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
-
-/* =====================================================
-   FIX FINAL (WHATSAPP STYLE):
-   - scroll hanya di dalam room chat (isi pesan)
-   - input kirim chat tetap (tidak ikut scroll)
-   ===================================================== */
 
 /* matikan scroll di luar room chat */
 .modal-overlay { overflow: hidden !important; }
@@ -720,7 +701,6 @@
   flex-direction: column !important;
 }
 
-/* ✅ yang scroll cuma isi pesan */
 .modal-chat-wrapper .ticket-chat-body{
   flex: 1 1 auto !important;
   min-height: 0 !important;
@@ -728,7 +708,6 @@
   max-height: none !important;
 }
 
-/* ✅ input kirim nempel bawah, tidak ikut scroll */
 .modal-chat-wrapper .ticket-chat-form{
   flex: 0 0 auto !important;
   position: sticky;     /* biar makin "nempel" */
@@ -737,13 +716,6 @@
   padding-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
-
-/* =====================================================
-   FINAL FIX:
-   - Modal punya tinggi tetap
-   - Scroll hanya di .ticket-chat-body
-   - Form kirim tetap di bawah
-   ===================================================== */
 
 .modal-overlay { overflow: hidden !important; }
 
@@ -780,7 +752,6 @@
   min-height: 0 !important;       /* kunci */
 }
 
-/* ✅ INI YANG SCROLL */
 .modal-chat-wrapper .ticket-chat-body{
   flex: 1 1 auto !important;
   min-height: 0 !important;       /* kunci */
@@ -788,7 +759,6 @@
   max-height: none !important;    /* override max-height 320px */
 }
 
-/* ✅ form tetap di bawah */
 .modal-chat-wrapper .ticket-chat-form{
   flex: 0 0 auto !important;
   background: #fff;

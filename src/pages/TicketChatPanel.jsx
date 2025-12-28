@@ -1,4 +1,3 @@
-// src/pages/TicketChatPanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTicketMessages, sendTicketMessage } from "../services/tickets";
 
@@ -28,18 +27,18 @@ export default function TicketChatPanel({ ticket }) {
   const status = String(ticket?.status || "").toUpperCase();
 
   const chatLockedInfo = useMemo(() => {
-    if (!ticketId) return "Ticket tidak ditemukan.";
+    if (!ticketId) return "Tiket tidak ditemukan.";
 
     if (status === "OPEN" && !isAdmin) {
-      return "Menunggu admin membuka ticket. Chat sementara dikunci.";
+      return "Menunggu admin membuka tiket. Chat sementara dikunci.";
     }
 
     if (status === "IN_REVIEW" && !isAdmin) {
-      return "Ticket sedang ditinjau admin. Chat sementara dikunci.";
+      return "Tiket sedang ditinjau admin. Chat sementara dikunci.";
     }
 
     if (status === "RESOLVED" && !isAdmin) {
-      return "Ticket sudah selesai. Chat tidak bisa digunakan lagi.";
+      return "Tiket sudah selesai. Chat tidak bisa digunakan lagi.";
     }
 
     return null;
@@ -108,7 +107,7 @@ export default function TicketChatPanel({ ticket }) {
     if (!ticketId) return;
 
     if (!text.trim()) {
-      setErrorMsg("Harus sertakan keterangan pesan.");
+      setErrorMsg("Harus menyertakan isi pesan.");
       return;
     }
 
@@ -128,7 +127,7 @@ export default function TicketChatPanel({ ticket }) {
     } catch (err) {
       console.error(err);
       setErrorMsg(
-        err?.response?.data?.message || "Gagal mengirim pesan. Coba lagi."
+        err?.response?.data?.message || "Gagal mengirim pesan. Silakan coba lagi."
       );
     } finally {
       setSending(false);
@@ -143,9 +142,9 @@ export default function TicketChatPanel({ ticket }) {
 
   const senderLabel = (msg) => {
     const sender = msg.sender;
-    if (!sender) return "User";
+    if (!sender) return "Pengguna";
     if (sender.role === "admin") return sender.name || "Admin";
-    return sender.name || "User";
+    return sender.name || "Pengguna";
   };
 
   const buildFileUrl = (att) => {
@@ -157,9 +156,9 @@ export default function TicketChatPanel({ ticket }) {
   return (
     <div className="ticket-chat">
       <div className="ticket-chat-header">
-        <h3>Diskusi Ticket</h3>
+        <h3>Diskusi Tiket</h3>
         <p className="ticket-chat-sub">
-          Chat antara kamu dan admin IT untuk ticket ini.
+          Chat antara Anda dan admin IT untuk tiket ini.
         </p>
       </div>
 
@@ -167,7 +166,7 @@ export default function TicketChatPanel({ ticket }) {
 
       <div className="ticket-chat-body" ref={bodyRef}>
         {loading ? (
-          <div className="ticket-chat-empty">Loading chat...</div>
+          <div className="ticket-chat-empty">Memuat chat...</div>
         ) : messages.length === 0 ? (
           <div className="ticket-chat-empty">
             Belum ada pesan. Mulai percakapan dengan mengetik pesan di bawah.
@@ -221,14 +220,18 @@ export default function TicketChatPanel({ ticket }) {
         )}
       </div>
 
-      {chatLockedInfo && <div className="ticket-chat-locked">{chatLockedInfo}</div>}
+      {chatLockedInfo && (
+        <div className="ticket-chat-locked">{chatLockedInfo}</div>
+      )}
 
       <form className="ticket-chat-form" onSubmit={handleSend}>
         <textarea
           className="ticket-chat-input"
           rows={2}
           placeholder={
-            canSend ? "Tulis pesan ke admin..." : "Chat dinonaktifkan untuk ticket ini."
+            canSend
+              ? "Tulis pesan ke admin..."
+              : "Chat dinonaktifkan untuk tiket ini."
           }
           value={text}
           onChange={(e) => setText(e.target.value)}

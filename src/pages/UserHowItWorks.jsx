@@ -1,4 +1,3 @@
-// src/pages/UserHowItWorks.jsx
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-how-it-works.css";
@@ -13,15 +12,15 @@ export default function UserHowItWorks() {
       <main className="user-main how-main">
         <div className="how-header">
           <div>
-            <h1 className="how-title">How It Works</h1>
+            <h1 className="how-title">Cara Kerja</h1>
             <p className="how-sub">
-              Panduan singkat proses penanganan ticket IT Helpdesk dari awal
+              Panduan singkat proses penanganan tiket IT Helpdesk dari awal
               sampai selesai.
             </p>
           </div>
 
           <button className="how-back" onClick={() => navigate("/user")}>
-            ← Back to Dashboard
+            ← Kembali ke Dashboard
           </button>
         </div>
 
@@ -30,13 +29,13 @@ export default function UserHowItWorks() {
             <div className="how-step">
               <div className="how-badge">1</div>
               <div className="how-step-content">
-                <div className="how-step-title">Create Ticket</div>
+                <div className="how-step-title">Buat Tiket</div>
                 <div className="how-step-desc">
-                  Buat ticket baru lewat menu <b>Create Ticket</b>. Jelaskan
-                  masalah dengan detail dan lampirkan file jika perlu.
+                  Buat tiket baru lewat menu <b>Buat Tiket</b>. Jelaskan masalah
+                  dengan detail dan lampirkan file jika diperlukan.
                 </div>
                 <div className="how-step-tip">
-                  Tips: Judul singkat + deskripsi lengkap bikin proses lebih
+                  Tips: Judul singkat + deskripsi lengkap membuat proses lebih
                   cepat.
                 </div>
               </div>
@@ -45,10 +44,10 @@ export default function UserHowItWorks() {
             <div className="how-step">
               <div className="how-badge">2</div>
               <div className="how-step-content">
-                <div className="how-step-title">Admin Review</div>
+                <div className="how-step-title">Tinjauan Admin</div>
                 <div className="how-step-desc">
-                  Tim IT akan membaca ticket kamu dan melakukan pengecekan awal.
-                  Status biasanya tetap <b>Open</b> di tahap ini.
+                  Tim IT akan membaca tiket Anda dan melakukan pengecekan awal.
+                  Status biasanya tetap <b>Open</b> pada tahap ini.
                 </div>
               </div>
             </div>
@@ -56,14 +55,14 @@ export default function UserHowItWorks() {
             <div className="how-step">
               <div className="how-badge">3</div>
               <div className="how-step-content">
-                <div className="how-step-title">In Progress</div>
+                <div className="how-step-title">Sedang Diproses</div>
                 <div className="how-step-desc">
-                  Ticket akan berubah menjadi <b>In Progress</b> saat sedang
+                  Tiket akan berubah menjadi <b>In Progress</b> saat sedang
                   ditangani.
                 </div>
                 <div className="how-step-tip">
-                  Komunikasi dilakukan di <b>chat pada ticket</b> (menu View /
-                  Detail ticket).
+                  Komunikasi dilakukan melalui <b>chat pada tiket</b> (menu
+                  Lihat/Detail tiket).
                 </div>
               </div>
             </div>
@@ -71,11 +70,11 @@ export default function UserHowItWorks() {
             <div className="how-step">
               <div className="how-badge done">4</div>
               <div className="how-step-content">
-                <div className="how-step-title">Resolved</div>
+                <div className="how-step-title">Selesai</div>
                 <div className="how-step-desc">
-                  Jika masalah sudah selesai, ticket akan ditandai{" "}
-                  <b>Resolved</b>. Kamu masih bisa lihat riwayatnya di My
-                  Tickets.
+                  Jika masalah sudah selesai, tiket akan ditandai{" "}
+                  <b>Resolved</b>. Anda masih bisa melihat riwayatnya di Tiket
+                  Saya.
                 </div>
               </div>
             </div>
@@ -87,16 +86,16 @@ export default function UserHowItWorks() {
             <div className="how-note-title">Catatan penting</div>
             <ul className="how-note-list">
               <li>
-                Jangan bikin ticket duplikat untuk masalah yang sama. Update aja
-                lewat chat ticket yang sudah ada.
+                Jangan membuat tiket duplikat untuk masalah yang sama. Cukup
+                lakukan pembaruan melalui chat pada tiket yang sudah ada.
               </li>
               <li>
-                Untuk percepatan, sertakan informasi: lokasi, device, waktu
-                kejadian, dan screenshot/error.
+                Agar penanganan lebih cepat, sertakan informasi: lokasi,
+                perangkat, waktu kejadian, serta screenshot/pesan error.
               </li>
               <li>
-                Jika status masih <b>Open</b>, berarti ticket sudah masuk antrian
-                (tinggal tunggu admin).
+                Jika status masih <b>Open</b>, berarti tiket sudah masuk antrean
+                (tinggal menunggu admin).
               </li>
             </ul>
 
@@ -105,13 +104,13 @@ export default function UserHowItWorks() {
                 className="how-btn ghost"
                 onClick={() => navigate("/user/tickets")}
               >
-                View My Tickets
+                Lihat Tiket Saya
               </button>
               <button
                 className="how-btn primary"
                 onClick={() => navigate("/user/tickets/create")}
               >
-                + Create New Ticket
+                + Buat Tiket Baru
               </button>
             </div>
           </div>

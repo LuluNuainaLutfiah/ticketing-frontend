@@ -1,4 +1,3 @@
-// src/pages/AdminTickets.jsx
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
@@ -20,11 +19,6 @@ export default function AdminTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
-  // ============================
-  // NORMALISASI STATUS
-  // DB: OPEN / IN_REVIEW / IN_PROGRESS / RESOLVED
-  // UI: open / in_review / in_progress / closed
-  // ============================
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
     if (val === "IN_REVIEW") return "in_review";
@@ -33,10 +27,8 @@ export default function AdminTickets() {
     return "open";
   };
 
-  // helper get id (untuk key & compare)
   const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
 
-  // AMBIL DATA TICKET ADMIN
   const loadTickets = async () => {
     try {
       setLoading(true);
@@ -60,7 +52,6 @@ export default function AdminTickets() {
     loadTickets();
   }, []);
 
-  // HITUNG JUMLAH PER STATUS
   const counts = useMemo(() => {
     const normalized = tickets.map((t) => normalizeStatus(t.status));
     return {
@@ -71,7 +62,6 @@ export default function AdminTickets() {
     };
   }, [tickets]);
 
-  // HELPER FIELD
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? "-";
   const getCategory = (t) => t.category ?? "-";
@@ -105,7 +95,6 @@ export default function AdminTickets() {
     });
   };
 
-  // FILTER: STATUS + SEARCH
   const filteredTickets = useMemo(() => {
     const q = search.toLowerCase();
 
@@ -130,7 +119,6 @@ export default function AdminTickets() {
       });
   }, [tickets, statusFilter, search]);
 
-  // BADGE PRIORITY
   const priorityClass = (p) => {
     const val = String(p || "").toLowerCase();
     if (val === "high") return "priority-badge high";
@@ -138,7 +126,6 @@ export default function AdminTickets() {
     return "priority-badge low";
   };
 
-  // BADGE STATUS
   const statusClass = (s) => {
     if (s === "open") return "status-badge open";
     if (s === "in_review") return "status-badge in-review";
@@ -148,15 +135,12 @@ export default function AdminTickets() {
   };
 
   const statusLabel = (s) => {
-    if (s === "in_review") return "In Review";
-    if (s === "in_progress") return "In Progress";
-    if (s === "closed") return "Resolved";
-    return "Open";
+    if (s === "in_review") return "Ditinjau";
+    if (s === "in_progress") return "Diproses";
+    if (s === "closed") return "Selesai";
+    return "Terbuka";
   };
 
-  // ============================
-  // Toggle chat modal (Chat button)
-  // ============================
   const toggleChat = (ticket) => {
     setSelectedTicket((prev) => {
       const prevId = getRealId(prev);
@@ -165,9 +149,6 @@ export default function AdminTickets() {
     });
   };
 
-  // ============================
-  // UPDATE STATUS BY ADMIN (generic)
-  // ============================
   const handleUpdateStatus = async (ticket, newStatus) => {
     const idTicket = getRealId(ticket);
     if (!idTicket) {
@@ -178,22 +159,16 @@ export default function AdminTickets() {
     try {
       setUpdatingId(idTicket);
 
-      // NOTE: service lu kemungkinan expects (id, statusString) atau (id, {status})
-      // Karena lu pakai adminUpdateTicketStatus(id, newStatus) sebelumnya, kita pertahankan.
       const result = await adminUpdateTicketStatus(idTicket, newStatus);
 
-      // response bisa { message, data: ticket } atau langsung ticket
       const updatedTicket = result?.data ?? result;
 
-      // pastikan idTicket tetap sama
       const merged = { ...ticket, ...updatedTicket };
 
-      // update list tickets realtime
       setTickets((prev) =>
         prev.map((t) => (getRealId(t) === idTicket ? merged : t))
       );
 
-      // kalau modal sedang buka ticket yang sama, update isi modalnya
       setSelectedTicket((prev) => {
         if (!prev) return prev;
         return getRealId(prev) === idTicket ? merged : prev;
@@ -209,59 +184,41 @@ export default function AdminTickets() {
     }
   };
 
-  // ============================
-  // ✅ REVISI: OPEN -> IN_REVIEW + kirim pesan otomatis
-  // ============================
   const handleSetInReview = async (ticket) => {
     const st = String(ticket.status || "").toUpperCase();
     if (st !== "OPEN") return;
 
-    // 1) update status ke IN_REVIEW
     const updated = await handleUpdateStatus(ticket, "IN_REVIEW");
     if (!updated) return;
 
-    // 2) kirim pesan otomatis ke user
     try {
       const idTicket = getRealId(updated);
       const fd = new FormData();
 
-      // sesuaikan field sesuai backend lu
-      fd.append("message_body", "Tiket anda sedang ditinjau");
+      fd.append("message_body", "Tiket Anda sedang ditinjau.");
 
       await sendTicketMessage(idTicket, fd);
-      // sesuai alur lu: di tahap review ga usah auto buka chat
     } catch (err) {
       console.error(err);
-      // status sudah berubah, kalau pesan gagal ya biarin aja / optional alert
-      // alert("Status berubah, tapi pesan otomatis gagal terkirim.");
     }
   };
 
-  // ============================
-  // ✅ REVISI: Start Progress -> IN_PROGRESS + buka modal chat
-  // ============================
   const handleStartProgress = async (ticket) => {
     const st = String(ticket.status || "").toUpperCase();
     if (st !== "IN_REVIEW") return;
 
     const updated = await handleUpdateStatus(ticket, "IN_PROGRESS");
     if (updated) {
-      // auto buka chat pas progress dimulai
       setSelectedTicket(updated);
     }
   };
 
-  // ============================
-  // RESOLVE / REOPEN
-  // ============================
   const handleResolve = async (ticket) => {
     const st = String(ticket.status || "").toUpperCase();
     if (st !== "IN_PROGRESS") return;
 
     const updated = await handleUpdateStatus(ticket, "RESOLVED");
     if (updated) {
-      // optional: tutup modal setelah resolve
-      // closeModal();
     }
   };
 
@@ -272,7 +229,6 @@ export default function AdminTickets() {
     await handleUpdateStatus(ticket, "OPEN");
   };
 
-  // RENDER TOMBOL AKSI PER BARIS
   const renderActionButtons = (t) => {
     const st = normalizeStatus(t.status);
     const idTicket = getRealId(t);
@@ -285,7 +241,7 @@ export default function AdminTickets() {
           disabled={isLoading}
           onClick={() => handleSetInReview(t)}
         >
-          {isLoading ? "Saving..." : "Review"}
+          {isLoading ? "Menyimpan..." : "Tinjau"}
         </button>
       );
     }
@@ -297,7 +253,7 @@ export default function AdminTickets() {
           disabled={isLoading}
           onClick={() => handleStartProgress(t)}
         >
-          {isLoading ? "Saving..." : "Start Progress"}
+          {isLoading ? "Menyimpan..." : "Mulai Proses"}
         </button>
       );
     }
@@ -309,7 +265,7 @@ export default function AdminTickets() {
             className="action-btn purple"
             disabled={isLoading}
             onClick={() => toggleChat(t)}
-            title="Open/close chat"
+            title="Buka/tutup chat"
           >
             Chat
           </button>
@@ -319,7 +275,7 @@ export default function AdminTickets() {
             disabled={isLoading}
             onClick={() => handleResolve(t)}
           >
-            {isLoading ? "Saving..." : "Mark as Resolved"}
+            {isLoading ? "Menyimpan..." : "Tandai Selesai"}
           </button>
         </div>
       );
@@ -332,7 +288,7 @@ export default function AdminTickets() {
           disabled={isLoading}
           onClick={() => handleReopen(t)}
         >
-          {isLoading ? "Saving..." : "Reopen"}
+          {isLoading ? "Menyimpan..." : "Buka Kembali"}
         </button>
       );
     }
@@ -348,9 +304,9 @@ export default function AdminTickets() {
         <div className="tickets-page">
           <div className="tickets-header">
             <div>
-              <h1 className="tickets-title">All Tickets</h1>
+              <h1 className="tickets-title">Semua Tiket</h1>
               <p className="tickets-subtitle">
-                View and manage all support tickets
+                Lihat dan kelola seluruh tiket bantuan
               </p>
             </div>
 
@@ -358,7 +314,7 @@ export default function AdminTickets() {
               <div className="tickets-search">
                 <input
                   type="text"
-                  placeholder="Search tickets..."
+                  placeholder="Cari tiket..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -372,8 +328,8 @@ export default function AdminTickets() {
           <div className="tickets-card">
             <div className="tickets-card-header">
               <div>
-                <h2>All Support Tickets</h2>
-                <p>Manage and track all tickets</p>
+                <h2>Semua Tiket Bantuan</h2>
+                <p>Kelola dan pantau seluruh tiket</p>
               </div>
 
               <div className="tickets-filters">
@@ -385,7 +341,7 @@ export default function AdminTickets() {
                   onClick={() => setStatusFilter("open")}
                 >
                   <span className="dot open" />
-                  Open ({counts.open})
+                  Terbuka ({counts.open})
                 </button>
 
                 <button
@@ -396,7 +352,7 @@ export default function AdminTickets() {
                   onClick={() => setStatusFilter("in_review")}
                 >
                   <span className="dot in-review" />
-                  In Review ({counts.in_review})
+                  Ditinjau ({counts.in_review})
                 </button>
 
                 <button
@@ -409,7 +365,7 @@ export default function AdminTickets() {
                   onClick={() => setStatusFilter("in_progress")}
                 >
                   <span className="dot in-progress" />
-                  In Progress ({counts.in_progress})
+                  Diproses ({counts.in_progress})
                 </button>
 
                 <button
@@ -420,7 +376,7 @@ export default function AdminTickets() {
                   onClick={() => setStatusFilter("closed")}
                 >
                   <span className="dot closed" />
-                  Closed ({counts.closed})
+                  Selesai ({counts.closed})
                 </button>
 
                 <button
@@ -429,25 +385,25 @@ export default function AdminTickets() {
                   }
                   onClick={() => setStatusFilter("all")}
                 >
-                  All ({tickets.length})
+                  Semua ({tickets.length})
                 </button>
               </div>
             </div>
 
             {loading ? (
-              <div className="tickets-loading">Loading tickets...</div>
+              <div className="tickets-loading">Memuat tiket...</div>
             ) : (
               <div className="tickets-table-wrapper">
                 <table className="tickets-table">
                   <thead>
                     <tr>
-                      <th>Ticket ID</th>
-                      <th>Title</th>
-                      <th>Category</th>
-                      <th>Priority</th>
+                      <th>ID Tiket</th>
+                      <th>Judul</th>
+                      <th>Kategori</th>
+                      <th>Prioritas</th>
                       <th>Status</th>
-                      <th>Created</th>
-                      <th>Action</th>
+                      <th>Dibuat</th>
+                      <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -495,7 +451,6 @@ export default function AdminTickets() {
         </div>
       </main>
 
-      {/* MODAL DETAIL + CHAT */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -503,22 +458,22 @@ export default function AdminTickets() {
               ✕
             </button>
 
-            <div className="modal-title">Ticket Detail</div>
+            <div className="modal-title">Detail Tiket</div>
             <div className="modal-sub">ID: {getId(selectedTicket)}</div>
 
             <div className="modal-body">
               <div className="modal-row">
-                <span>Title</span>
+                <span>Judul</span>
                 <strong>{getTitle(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Category</span>
+                <span>Kategori</span>
                 <strong>{getCategory(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Priority</span>
+                <span>Prioritas</span>
                 <strong>
                   <span className={priorityClass(getPriority(selectedTicket))}>
                     {getPriority(selectedTicket)}
@@ -530,7 +485,9 @@ export default function AdminTickets() {
                 <span>Status</span>
                 <strong>
                   <span
-                    className={statusClass(normalizeStatus(selectedTicket.status))}
+                    className={statusClass(
+                      normalizeStatus(selectedTicket.status)
+                    )}
                   >
                     {statusLabel(normalizeStatus(selectedTicket.status))}
                   </span>
@@ -538,17 +495,17 @@ export default function AdminTickets() {
               </div>
 
               <div className="modal-row">
-                <span>Resolved</span>
+                <span>Selesai</span>
                 <strong>{getResolved(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Created</span>
+                <span>Dibuat</span>
                 <strong>{getCreated(selectedTicket)}</strong>
               </div>
 
               <div className="modal-desc">
-                <div className="modal-desc-title">Description</div>
+                <div className="modal-desc-title">Deskripsi</div>
                 <p>{selectedTicket.description ?? "-"}</p>
               </div>
 

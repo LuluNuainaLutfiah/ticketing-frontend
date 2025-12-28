@@ -4,13 +4,11 @@ import { useNavigate } from "react-router-dom";
 export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) {
   const navigate = useNavigate();
 
-  // ✅ harus ada setter biar bisa toggle
   const [openNotif, setOpenNotif] = useState(false);
   const notifRef = useRef(null);
 
   const notifCount = useMemo(() => notifItems.length, [notifItems]);
 
-  // ✅ klik di luar => tutup
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!notifRef.current) return;
@@ -54,7 +52,7 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
           />
         </div>
 
-        {/* ✅ NOTIFICATION */}
+        {/* NOTIFICATION */}
         <div className="admin-notif" ref={notifRef}>
           <button
             type="button"
@@ -88,7 +86,6 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
                       className="admin-notif-item"
                       onClick={() => {
                         setOpenNotif(false);
-                        // ✅ masuk ke halaman ticket list
                         navigate("/admin/tickets");
                       }}
                     >

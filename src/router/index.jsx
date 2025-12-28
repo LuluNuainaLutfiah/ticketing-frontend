@@ -1,4 +1,3 @@
-// src/routes/index.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "../App";
 
@@ -24,15 +23,8 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* App = layout utama (Navbar + Outlet + Footer) */}
         <Route element={<App />}>
-          {/* HOME */}
           <Route index element={<Home />} />
-          {/* atau kalau mau eksplisit:
-              <Route path="/" element={<Home />} /> 
-              tapi jangan dua-duanya sekaligus
-          */}
-
           {/* AUTH */}
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />

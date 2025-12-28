@@ -40,7 +40,7 @@ export default function UserCreateTicket() {
     const cleanDesc = description.trim();
 
     if (!cleanTitle || !cleanCategory || !priority || !cleanDesc) {
-      setErrorMsg("Harap isi semua field wajib bertanda *");
+      setErrorMsg("Harap isi semua kolom wajib bertanda *");
       return;
     }
 
@@ -59,7 +59,7 @@ export default function UserCreateTicket() {
 
       await createUserTicket(formData);
 
-      setSuccessMsg("Ticket berhasil dibuat.");
+      setSuccessMsg("Tiket berhasil dibuat.");
 
       setTitle("");
       setCategory("");
@@ -73,7 +73,7 @@ export default function UserCreateTicket() {
     } catch (err) {
       console.error(err);
       setErrorMsg(
-        err?.response?.data?.message || "Gagal mengirim ticket ke server."
+        err?.response?.data?.message || "Gagal mengirim tiket ke server."
       );
     } finally {
       setSubmitting(false);
@@ -90,8 +90,8 @@ export default function UserCreateTicket() {
 
       <main className="user-main uct-main">
         <header className="uct-header">
-          <h1 className="uct-header-title">Create New Ticket</h1>
-          <p className="uct-header-sub">Submit a new support request.</p>
+          <h1 className="uct-header-title">Buat Tiket Baru</h1>
+          <p className="uct-header-sub">Ajukan permintaan bantuan baru.</p>
         </header>
 
         <div className="uct-wrapper">
@@ -99,9 +99,9 @@ export default function UserCreateTicket() {
             <div className="uct-card-header">
               <div className="uct-icon-circle">➕</div>
               <div>
-                <div className="uct-card-title">Create Support Ticket</div>
+                <div className="uct-card-title">Buat Tiket Bantuan</div>
                 <div className="uct-card-sub">
-                  Fill out the form below to submit your support request
+                  Isi formulir di bawah ini untuk mengajukan permintaan bantuan
                 </div>
               </div>
             </div>
@@ -112,12 +112,12 @@ export default function UserCreateTicket() {
             <form className="uct-form" onSubmit={handleSubmit}>
               <div className="uct-form-group">
                 <label className="uct-label">
-                  Ticket Title <span className="uct-required">*</span>
+                  Judul Tiket <span className="uct-required">*</span>
                 </label>
                 <input
                   type="text"
                   className="uct-input"
-                  placeholder="Brief description of your issue"
+                  placeholder="Ringkas masalah yang Anda alami"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -126,15 +126,14 @@ export default function UserCreateTicket() {
               <div className="uct-row">
                 <div className="uct-form-group">
                   <label className="uct-label">
-                    Category <span className="uct-required">*</span>
+                    Kategori <span className="uct-required">*</span>
                   </label>
 
-                  {/* ✅ Manual input + suggestions */}
                   <input
                     type="text"
                     className="uct-input"
                     list="category-suggestions"
-                    placeholder="Type a category (e.g., Network, Email...)"
+                    placeholder="Ketik kategori (mis. Jaringan, Email...)"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     autoComplete="off"
@@ -150,40 +149,40 @@ export default function UserCreateTicket() {
 
                 <div className="uct-form-group">
                   <label className="uct-label">
-                    Priority Level <span className="uct-required">*</span>
+                    Tingkat Prioritas <span className="uct-required">*</span>
                   </label>
                   <select
                     className="uct-input"
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
                   >
-                    <option value="">Select priority</option>
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
+                    <option value="">Pilih prioritas</option>
+                    <option value="LOW">Rendah</option>
+                    <option value="MEDIUM">Sedang</option>
+                    <option value="HIGH">Tinggi</option>
                   </select>
                 </div>
               </div>
 
               <div className="uct-form-group">
                 <label className="uct-label">
-                  Detailed Description <span className="uct-required">*</span>
+                  Deskripsi Detail <span className="uct-required">*</span>
                 </label>
                 <textarea
                   className="uct-textarea"
-                  placeholder="Please provide as much detail as possible about your issue..."
+                  placeholder="Jelaskan masalah Anda sedetail mungkin..."
                   rows={5}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
                 <div className="uct-hint">
-                  The more details you provide, the faster we can resolve your
-                  issue.
+                  Semakin detail informasi yang Anda berikan, semakin cepat kami
+                  dapat menyelesaikan masalah Anda.
                 </div>
               </div>
 
               <div className="uct-form-group">
-                <label className="uct-label">Attachments (Optional)</label>
+                <label className="uct-label">Lampiran (Opsional)</label>
 
                 <label className="uct-upload-box">
                   <input
@@ -196,9 +195,9 @@ export default function UserCreateTicket() {
                   <div className="uct-upload-text">
                     {attachment
                       ? attachment.name
-                      : "Click to upload or drag and drop"}
+                      : "Klik untuk unggah atau tarik dan lepas file"}
                     <div className="uct-upload-sub">
-                      PNG, JPG, PDF up to 10MB
+                      PNG, JPG, PDF maksimal 10MB
                     </div>
                   </div>
                 </label>
@@ -211,7 +210,7 @@ export default function UserCreateTicket() {
                   onClick={handleCancel}
                   disabled={submitting}
                 >
-                  Cancel
+                  Batal
                 </button>
 
                 <button
@@ -219,7 +218,7 @@ export default function UserCreateTicket() {
                   className="uct-btn uct-btn-primary"
                   disabled={submitting}
                 >
-                  {submitting ? "Submitting..." : "Submit Ticket"}
+                  {submitting ? "Mengirim..." : "Kirim Tiket"}
                 </button>
               </div>
             </form>

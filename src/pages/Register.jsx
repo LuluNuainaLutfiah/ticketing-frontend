@@ -32,29 +32,22 @@ export default function RegisterPage() {
     setErrorMsg("");
 
     if (form.password !== form.password_confirmation) {
-      setErrorMsg("Password dan konfirmasi password tidak sama.");
+      setErrorMsg("Kata sandi dan konfirmasi kata sandi tidak sama.");
       setLoading(false);
       return;
     }
 
     try {
-      // payload yang dikirim ke backend
       const payload = {
         name: form.name,
         email: form.email,
         password: form.password,
         password_confirmation: form.password_confirmation,
-
-        // di DB: enum('admin','user')
         role: "user",
-
-        // di DB: enum('mahasiswa','dosen')
         user_type: form.user_type,
-
         phone: form.phone || null,
       };
 
-      // mapping id_number ke npm / nik sesuai user_type
       if (form.user_type === "mahasiswa") {
         payload.npm = form.id_number;
       } else {
@@ -63,7 +56,6 @@ export default function RegisterPage() {
 
       const data = await register(payload);
 
-      // ---- normalize response biar aman ----
       const token =
         data.token ||
         data.access_token ||
@@ -79,7 +71,6 @@ export default function RegisterPage() {
       if (token) localStorage.setItem("token", token);
       if (user) localStorage.setItem("user", JSON.stringify(user));
 
-      // setelah register, arahkan ke login
       navigate("/login");
     } catch (err) {
       console.error(err);
@@ -90,7 +81,7 @@ export default function RegisterPage() {
         const firstKey = Object.keys(resp.errors)[0];
         setErrorMsg(resp.errors[firstKey][0]);
       } else {
-        setErrorMsg(resp?.message || "Registrasi gagal.");
+        setErrorMsg(resp?.message || "Registrasi gagal. Silakan coba kembali.");
       }
     } finally {
       setLoading(false);
@@ -98,7 +89,9 @@ export default function RegisterPage() {
   };
 
   const idLabel =
-    form.user_type === "mahasiswa" ? "NPM (Mahasiswa)" : "NIK (Dosen)";
+    form.user_type === "mahasiswa"
+      ? "NPM (Mahasiswa)"
+      : "NIK (Dosen)";
 
   return (
     <div className="auth-page">
@@ -108,7 +101,7 @@ export default function RegisterPage() {
             <div className="auth-logo" />
           </div>
 
-          <div className="auth-title-centered">Register</div>
+          <div className="auth-title-centered">Pendaftaran Akun</div>
 
           {errorMsg && <div className="auth-error">{errorMsg}</div>}
 
@@ -131,7 +124,7 @@ export default function RegisterPage() {
             {/* EMAIL */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="email">
-                Email Address
+                Alamat Email
               </label>
               <input
                 id="email"
@@ -144,7 +137,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* USER TYPE (Mahasiswa / Dosen) */}
+            {/* USER TYPE */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="user_type">
                 Status Pengguna
@@ -157,8 +150,8 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
               >
-                  <option value="mahasiswa">Mahasiswa</option>
-                  <option value="dosen">Dosen</option>
+                <option value="mahasiswa">Mahasiswa</option>
+                <option value="dosen">Dosen</option>
               </select>
             </div>
 
@@ -180,7 +173,7 @@ export default function RegisterPage() {
             {/* PHONE */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="phone">
-                Phone Number
+                Nomor Telepon
               </label>
               <input
                 id="phone"
@@ -195,7 +188,7 @@ export default function RegisterPage() {
             {/* PASSWORD */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="password">
-                Password
+                Kata Sandi
               </label>
               <input
                 id="password"
@@ -211,7 +204,7 @@ export default function RegisterPage() {
             {/* KONFIRMASI PASSWORD */}
             <div className="auth-form-group">
               <label className="auth-label" htmlFor="password_confirmation">
-                Konfirmasi Password
+                Konfirmasi Kata Sandi
               </label>
               <input
                 id="password_confirmation"
@@ -224,7 +217,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Remember me (opsional, tidak dikirim) */}
             <div className="auth-row-between">
               <label className="auth-remember">
                 <input
@@ -233,19 +225,19 @@ export default function RegisterPage() {
                   checked={form.remember}
                   onChange={handleChange}
                 />
-                Remember me
+                Ingat saya
               </label>
               <span />
             </div>
 
             <button className="auth-btn" type="submit" disabled={loading}>
-              {loading ? "Memproses..." : "REGISTER"}
+              {loading ? "Memproses..." : "DAFTAR"}
             </button>
           </form>
 
           <div className="auth-bottom-box">
-            Apakah anda memiliki akun?{" "}
-            <Link to="/login">Login Here!</Link>
+            Sudah memiliki akun?{" "}
+            <Link to="/login">Masuk di sini</Link>
           </div>
         </div>
       </div>

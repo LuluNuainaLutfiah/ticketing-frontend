@@ -18,7 +18,6 @@ export default function UserSidebar({ active = "dashboard" }) {
   return (
     <>
       <aside className="user-sidebar">
-        {/* BRAND */}
         <div className="user-sidebar-brand">
           <img src={logo} className="user-sidebar-logo" alt="Logo" />
 
@@ -28,7 +27,6 @@ export default function UserSidebar({ active = "dashboard" }) {
           </div>
         </div>
 
-        {/* MENU LIST */}
         <nav className="user-menu">
           <div
             className={itemClass("dashboard")}
@@ -59,15 +57,11 @@ export default function UserSidebar({ active = "dashboard" }) {
           </div>
         </nav>
 
-        {/* LOGOUT BUTTON */}
         <button className="user-logout" onClick={() => setShowConfirm(true)}>
           Logout
         </button>
       </aside>
 
-      {/* ========================== */}
-      {/* MODAL KONFIRMASI LOGOUT */}
-      {/* ========================== */}
       {showConfirm && (
         <div className="logout-modal-overlay">
           <div className="logout-modal">
