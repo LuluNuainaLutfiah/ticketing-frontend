@@ -14,7 +14,7 @@ export default function UserServiceHours() {
           <div className="sh-card">
             <div className="sh-row">
               <span>Senin - Jumat</span>
-              <strong>08.00 - 18.00</strong>
+              <strong>08.00 - 15.00</strong>
             </div>
             <div className="sh-row">
               <span>Sabtu</span>

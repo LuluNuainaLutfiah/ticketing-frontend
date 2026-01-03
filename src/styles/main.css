@@ -346,7 +346,7 @@ body {
 ========================================= */
 
 .footer-wrapper {
-display: none !important;
+  display: none !important;
 }
 /* 
 .footer {
@@ -1416,4 +1416,15 @@ body {
   .info-cards {
     grid-template-columns: 1fr;
   }
+}
+
+body {
+  caret-color: transparent;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  caret-color: auto;
 }

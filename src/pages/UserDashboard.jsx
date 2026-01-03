@@ -27,41 +27,78 @@ export default function UserDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
+  // ===== NOTIF STATE (tiket selesai) =====
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  /**
+   * ============================
+   * STATUS NORMALIZER
+   * ============================
+   */
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
+    if (v === "IN_REVIEW") return "review";
     if (v === "IN_PROGRESS") return "progress";
-    if (v === "RESOLVED") return "done";
+    if (v === "RESOLVED" || v === "CLOSED") return "done";
     return "open";
+  };
+
+  const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
+  const getTitle = (t) => t.title ?? t.subject ?? "-";
+
+  /**
+   * ============================
+   * FORMAT WAKTU -> WIB (Jakarta)
+   * ============================
+   */
+  const formatJakarta = (raw) => {
+    if (!raw) return "-";
+
+    let s = String(raw).trim();
+
+    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+      s = s.replace(" ", "T");
+    }
+
+    // jika tidak ada timezone, anggap UTC
+    const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTimezone) s += "Z";
+
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return String(raw);
+
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
   };
 
   const createdLabel = (t) => {
     const raw = t.created_at ?? t.createdAt ?? t.date;
-    if (!raw) return "-";
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
-    return d.toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatJakarta(raw);
   };
 
   const resolvedLabel = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date;
-    if (!raw) return "-";
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
-    return d.toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
+    return formatJakarta(raw);
   };
 
+  const updatedLabel = (t) => {
+    const raw = t.updated_at ?? t.updatedAt ?? t.last_update;
+    return formatJakarta(raw);
+  };
+
+  /**
+   * ============================
+   * LOAD TICKETS
+   * ============================
+   */
   useEffect(() => {
     (async () => {
       try {
@@ -85,6 +122,11 @@ export default function UserDashboard() {
     })();
   }, []);
 
+  /**
+   * ============================
+   * FILTERING
+   * ============================
+   */
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
     const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
@@ -99,8 +141,14 @@ export default function UserDashboard() {
     return matchText && matchStatus;
   });
 
+  /**
+   * ============================
+   * STATS
+   * ============================
+   */
   const stats = {
     open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
+    review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
       .length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
@@ -113,9 +161,54 @@ export default function UserDashboard() {
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
+    if (st === "review") return "Ditinjau";
     if (st === "progress") return "Sedang Diproses";
     if (st === "done") return "Selesai";
     return "Terbuka";
+  };
+
+  /**
+   * ============================
+   * NOTIF: tiket DONE
+   * ============================
+   */
+  const doneTickets = useMemo(() => {
+    return tickets
+      .filter((t) => normalizeStatus(t.status) === "done")
+      .sort((a, b) => {
+        const da = new Date(
+          a.resolved_at ??
+            a.resolution_date ??
+            a.closed_at ??
+            a.updated_at ??
+            0
+        ).getTime();
+        const db = new Date(
+          b.resolved_at ??
+            b.resolution_date ??
+            b.closed_at ??
+            b.updated_at ??
+            0
+        ).getTime();
+        return db - da;
+      });
+  }, [tickets]);
+
+  const notifCount = doneTickets.length;
+
+  const notifItems = useMemo(() => {
+    return doneTickets.slice(0, 8).map((t) => ({
+      id: getId(t),
+      title: getTitle(t),
+      resolvedAt: resolvedLabel(t),
+      ticket: t,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneTickets]);
+
+  const onClickNotifItem = (item) => {
+    setSelectedTicket(item.ticket);
+    setNotifOpen(false);
   };
 
   return (
@@ -129,6 +222,11 @@ export default function UserDashboard() {
           status={status}
           setStatus={setStatus}
           user={user}
+          notifOpen={notifOpen}
+          setNotifOpen={setNotifOpen}
+          notifCount={notifCount}
+          notifItems={notifItems}
+          onClickNotifItem={onClickNotifItem}
         />
 
         {!!errorMsg && <div className="user-error">{errorMsg}</div>}
@@ -202,6 +300,7 @@ export default function UserDashboard() {
                   <th>Aksi</th>
                 </tr>
               </thead>
+
               <tbody>
                 {loadingTickets ? (
                   <tr>
@@ -217,12 +316,11 @@ export default function UserDashboard() {
                   </tr>
                 ) : (
                   filtered.map((t) => {
-                    const id = t.code_ticket ?? t.id_ticket ?? "-";
-                    const title = t.title ?? t.subject ?? "-";
+                    const id = getId(t);
+                    const title = getTitle(t);
                     const category = t.category ?? t.category_name ?? "-";
                     const priority = t.priority ?? "LOW";
-                    const updated =
-                      t.updated_at ?? t.updatedAt ?? t.last_update ?? "-";
+                    const updated = updatedLabel(t);
 
                     return (
                       <tr key={id}>
@@ -273,7 +371,7 @@ export default function UserDashboard() {
           <div className="info-card">
             <div className="info-icon info-green">🗓️</div>
             <div className="info-title">Jam Layanan</div>
-            <div className="info-sub">Senin - Jumat: 08.00 - 18.00</div>
+            <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
             <button
               className="info-link-btn"
               onClick={() => navigate("/user/service-hours")}
@@ -357,12 +455,7 @@ export default function UserDashboard() {
 
               <div className="modal-row">
                 <span>Pembaruan Terakhir</span>
-                <strong>
-                  {selectedTicket.updated_at ??
-                    selectedTicket.updatedAt ??
-                    selectedTicket.last_update ??
-                    "-"}
-                </strong>
+                <strong>{updatedLabel(selectedTicket)}</strong>
               </div>
 
               <div className="modal-desc">

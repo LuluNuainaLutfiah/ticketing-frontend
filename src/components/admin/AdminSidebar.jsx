@@ -22,43 +22,57 @@ export default function AdminSidebar({ active = "overview" }) {
           <img src={logo} alt="Logo" className="user-brand" />
           <div className="admin-sidebar-brandtext">
             <div className="brand-main">IT Helpdesk</div>
-            <div className="brand-sub">technical support portal</div>
+            <div className="brand-sub">Portal Dukungan Teknis</div>
           </div>
         </div>
 
-        {/* Menu */}
+        {/* MENU */}
         <nav className="admin-menu">
-          <div className={itemClass("overview")} onClick={() => navigate("/admin")}>
-            Ringkasan
+          <div
+            className={itemClass("overview")}
+            onClick={() => navigate("/admin")}
+          >
+            Dashboard
           </div>
 
-          <div className={itemClass("tickets")} onClick={() => navigate("/admin/tickets")}>
+          <div
+            className={itemClass("tickets")}
+            onClick={() => navigate("/admin/tickets")}
+          >
             Tiket
           </div>
 
-          <div className={itemClass("activity")} onClick={() => navigate("/admin/activity")}>
-            Log Aktivitas
+          <div
+            className={itemClass("activity")}
+            onClick={() => navigate("/admin/activity")}
+          >
+            Aktivitas
           </div>
         </nav>
 
-        {/* Logout */}
-        <button className="admin-logout" onClick={() => setShowConfirm(true)}>
+        {/* LOGOUT */}
+        <button
+          className="admin-logout"
+          onClick={() => setShowConfirm(true)}
+        >
           Logout
         </button>
       </aside>
 
-      {/* MODAL CONFIRM LOGOUT */}
+      {/* MODAL KONFIRMASI LOGOUT */}
       {showConfirm && (
         <div className="logout-modal-overlay">
           <div className="logout-modal">
-
             <h3 className="logout-title">Konfirmasi Logout</h3>
             <p className="logout-text">
               Apakah Anda yakin ingin logout dari akun admin?
             </p>
 
             <div className="logout-actions">
-              <button className="btn-cancel" onClick={() => setShowConfirm(false)}>
+              <button
+                className="btn-cancel"
+                onClick={() => setShowConfirm(false)}
+              >
                 Batal
               </button>
 
@@ -66,7 +80,6 @@ export default function AdminSidebar({ active = "overview" }) {
                 Logout
               </button>
             </div>
-
           </div>
         </div>
       )}

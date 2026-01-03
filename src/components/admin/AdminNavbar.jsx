@@ -35,9 +35,9 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
     <header className="admin-navbar">
       <div className="admin-navbar-left">
         <div className="admin-navbar-title">
-          <div className="admin-navbar-title-main">Overview</div>
+          <div className="admin-navbar-title-main">Dashboard</div>
           <div className="admin-navbar-title-sub">
-            Monitor and manage IT support operations
+            Pantau dan kelola operasional dukungan IT
           </div>
         </div>
       </div>
@@ -46,19 +46,19 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
         <div className="admin-search-wrap">
           <input
             className="admin-search-input"
-            placeholder="Search tickets..."
+            placeholder="Cari tiket..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
 
-        {/* NOTIFICATION */}
+        {/* NOTIFIKASI */}
         <div className="admin-notif" ref={notifRef}>
           <button
             type="button"
             className="admin-notif-btn"
             onClick={() => setOpenNotif((p) => !p)}
-            aria-label="Notifications"
+            aria-label="Notifikasi"
           >
             <span className="admin-notif-bell">🔔</span>
             {notifCount > 0 && (
@@ -69,15 +69,17 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
           {openNotif && (
             <div className="admin-notif-panel">
               <div className="admin-notif-panel-head">
-                <div className="admin-notif-panel-title">Notifications</div>
+                <div className="admin-notif-panel-title">Notifikasi</div>
                 <div className="admin-notif-panel-sub">
-                  {notifCount} ticket masih OPEN
+                  {notifCount} tiket masih TERBUKA
                 </div>
               </div>
 
               <div className="admin-notif-panel-list">
                 {notifCount === 0 ? (
-                  <div className="admin-notif-empty">Tidak ada notif 🎉</div>
+                  <div className="admin-notif-empty">
+                    Tidak ada notifikasi 🎉
+                  </div>
                 ) : (
                   notifItems.slice(0, 8).map((n) => (
                     <button
@@ -116,7 +118,7 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
                   navigate("/admin/tickets");
                 }}
               >
-                View all tickets →
+                Lihat semua tiket →
               </button>
             </div>
           )}

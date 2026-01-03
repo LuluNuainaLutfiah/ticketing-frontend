@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-tickets.css";
-// kalau file TicketChatPanel.jsx ada di folder yang sama (pages), pakai "./"
 import TicketChatPanel from "./TicketChatPanel";
 import { fetchUserTickets } from "../services/tickets";
 
@@ -73,7 +72,7 @@ export default function UserTickets() {
     });
   };
 
-  // FORMAT TANGGAL RESOLVED (resolved_at)
+  // FORMAT TANGGAL RESOLVED
   const resolvedLabel = (t) => {
     const raw = t.resolved_at ?? t.resolution_date;
     if (!raw) return "-";
@@ -118,9 +117,9 @@ export default function UserTickets() {
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
-    if (st === "progress") return "In Progress";
-    if (st === "done") return "Closed";
-    return "Open";
+    if (st === "progress") return "Sedang Diproses";
+    if (st === "done") return "Selesai";
+    return "Terbuka";
   };
 
   return (
@@ -130,9 +129,9 @@ export default function UserTickets() {
       <main className="user-main ut-no-topbar">
         {/* HEADER */}
         <header className="ut-header">
-          <h1 className="ut-header-title">My Tickets</h1>
+          <h1 className="ut-header-title">Tiket Saya</h1>
           <p className="ut-header-sub">
-            View and manage all your support tickets.
+            Lihat dan kelola semua tiket bantuan Anda.
           </p>
         </header>
 
@@ -142,15 +141,17 @@ export default function UserTickets() {
         <section className="ut-card">
           <div className="ut-card-header">
             <div>
-              <h2 className="ut-card-title">All Tickets</h2>
-              <p className="ut-card-sub">{filtered.length} tickets found</p>
+              <h2 className="ut-card-title">Semua Tiket</h2>
+              <p className="ut-card-sub">
+                {filtered.length} tiket ditemukan
+              </p>
             </div>
 
             <button
               className="ut-new-btn"
               onClick={() => (window.location.href = "/user/tickets/create")}
             >
-              + New Ticket
+              + Buat Tiket Baru
             </button>
           </div>
 
@@ -158,14 +159,14 @@ export default function UserTickets() {
             <table className="ut-table">
               <thead>
                 <tr>
-                  <th>Ticket ID</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Priority</th>
+                  <th>ID Tiket</th>
+                  <th>Judul</th>
+                  <th>Kategori</th>
+                  <th>Prioritas</th>
                   <th>Status</th>
-                  <th>Resolved</th>
-                  <th>Created</th>
-                  <th>Action</th>
+                  <th>Selesai</th>
+                  <th>Dibuat</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
 
@@ -173,13 +174,13 @@ export default function UserTickets() {
                 {loading ? (
                   <tr>
                     <td colSpan="8" className="ut-empty">
-                      Loading tickets...
+                      Memuat tiket...
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="ut-empty">
-                      No tickets found.
+                      Tidak ada tiket ditemukan.
                     </td>
                   </tr>
                 ) : (
@@ -212,7 +213,7 @@ export default function UserTickets() {
                             className="ut-view-btn"
                             onClick={() => setSelectedTicket(t)}
                           >
-                            View
+                            Lihat
                           </button>
                         </td>
                       </tr>
@@ -233,7 +234,7 @@ export default function UserTickets() {
               ✕
             </button>
 
-            <div className="modal-title">Ticket Detail</div>
+            <div className="modal-title">Detail Tiket</div>
             <div className="modal-sub">
               ID:{" "}
               {selectedTicket.code_ticket ??
@@ -243,17 +244,17 @@ export default function UserTickets() {
 
             <div className="modal-body">
               <div className="modal-row">
-                <span>Title</span>
+                <span>Judul</span>
                 <strong>{selectedTicket.title ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Category</span>
+                <span>Kategori</span>
                 <strong>{selectedTicket.category ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Priority</span>
+                <span>Prioritas</span>
                 <strong>
                   <span className={priorityClass(selectedTicket.priority)}>
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
@@ -271,21 +272,20 @@ export default function UserTickets() {
               </div>
 
               <div className="modal-row">
-                <span>Resolved</span>
+                <span>Selesai</span>
                 <strong>{resolvedLabel(selectedTicket)}</strong>
               </div>
 
               <div className="modal-row">
-                <span>Created</span>
+                <span>Dibuat</span>
                 <strong>{createdLabel(selectedTicket)}</strong>
               </div>
 
               <div className="modal-desc">
-                <div className="modal-desc-title">Description</div>
+                <div className="modal-desc-title">Deskripsi</div>
                 <p>{selectedTicket.description ?? "-"}</p>
               </div>
 
-              {/* ⬇️ CHAT PANEL DITARUH DI SINI */}
               <div className="modal-chat-wrapper">
                 <TicketChatPanel ticket={selectedTicket} />
               </div>

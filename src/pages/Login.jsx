@@ -107,6 +107,14 @@ export default function LoginPage() {
   return (
     <div ref={pageRef} className="auth-page">
       <div className="auth-bg">
+        <div
+          className="auth-back-btn"
+          onClick={() => navigate("/")}
+          title="Kembali ke Beranda"
+        >
+          ←
+        </div>
+
         <div className="auth-card">
           <div className="auth-logo-wrapper">
             <div className="auth-logo" />

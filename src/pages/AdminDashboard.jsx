@@ -39,18 +39,37 @@ export default function AdminDashboard() {
     return raw.charAt(0) + raw.slice(1).toLowerCase();
   };
 
-  const createdAtLabel = (t) => {
-    const raw = t.created_at ?? t.createdAt ?? t.date;
+  const formatJakarta = (raw) => {
     if (!raw) return "-";
-    const d = new Date(raw);
+
+    let s = String(raw).trim();
+
+    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+      s = s.replace(" ", "T");
+    }
+
+    // kalau tidak ada timezone (Z / +07:00), anggap UTC
+    const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTimezone) s += "Z";
+
+    const d = new Date(s);
     if (Number.isNaN(d.getTime())) return String(raw);
-    return d.toLocaleString("id-ID", {
+
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-    });
+      hour12: false,
+    }).format(d);
+  };
+
+  const createdAtLabel = (t) => {
+    const raw = t.created_at ?? t.createdAt ?? t.date;
+    return formatJakarta(raw);
   };
 
   const getMessage = (a) =>
@@ -65,18 +84,7 @@ export default function AdminDashboard() {
     const raw =
       a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
 
-    if (!raw) return "-";
-
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return String(raw);
-
-    return d.toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatJakarta(raw);
   };
 
   const loadTickets = async () => {
@@ -248,9 +256,7 @@ export default function AdminDashboard() {
                           <td>{id}</td>
                           <td>{getTitle(t)}</td>
                           <td>
-                            <span
-                              className={`priority ${priority.toLowerCase()}`}
-                            >
+                            <span className={`priority ${priority.toLowerCase()}`}>
                               {priority}
                             </span>
                           </td>
@@ -281,9 +287,7 @@ export default function AdminDashboard() {
 
           <div className="admin-activity-card">
             <div className="admin-activity-title">Aktivitas Terbaru</div>
-            <div className="admin-activity-sub">
-              Pembaruan sistem terbaru
-            </div>
+            <div className="admin-activity-sub">Pembaruan sistem terbaru</div>
 
             {loadingActivities ? (
               <div className="loading-text">Memuat aktivitas...</div>
@@ -318,9 +322,7 @@ export default function AdminDashboard() {
                   })}
 
                   {activities.length === 0 && (
-                    <div className="empty-activity">
-                      Belum ada aktivitas.
-                    </div>
+                    <div className="empty-activity">Belum ada aktivitas.</div>
                   )}
                 </ul>
               </div>

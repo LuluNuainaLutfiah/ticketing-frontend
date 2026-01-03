@@ -12,13 +12,16 @@ export default function Navbar() {
       <div className="navbar">
         <div className="navbar-left">
           <div className="navbar-logo" />
-          <img src={logoUika} alt="logo UIKA" className="brand-logo" />
+          <img src={logoUika} alt="Logo UIKA" className="brand-logo" />
           <div className="navbar-title">
-            <span className="navbar-title-main">Universitas IT Helpdesk</span>
-            <span className="navbar-title-sub">technical support portal</span>
+            <span className="navbar-title-main">
+              Universitas Ibn Khaldun – IT Helpdesk
+            </span>
+            <span className="navbar-title-sub">
+              Portal Dukungan Teknis
+            </span>
           </div>
         </div>
-
       </div>
     </header>
   );

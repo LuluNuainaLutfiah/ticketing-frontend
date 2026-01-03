@@ -19,11 +19,11 @@ export default function UserSidebar({ active = "dashboard" }) {
     <>
       <aside className="user-sidebar">
         <div className="user-sidebar-brand">
-          <img src={logo} className="user-sidebar-logo" alt="Logo" />
+          <img src={logo} className="user-sidebar-logo" alt="Logo IT Helpdesk" />
 
           <div className="user-sidebar-brandtext">
             <div className="user-brand-main">IT Helpdesk</div>
-            <div className="user-brand-sub">technical support portal</div>
+            <div className="user-brand-sub">Portal Dukungan Teknis</div>
           </div>
         </div>
 
@@ -39,21 +39,21 @@ export default function UserSidebar({ active = "dashboard" }) {
             className={itemClass("my-tickets")}
             onClick={() => navigate("/user/tickets")}
           >
-            My Tickets
+            Tiket Saya
           </div>
 
           <div
             className={itemClass("create-ticket")}
             onClick={() => navigate("/user/tickets/create")}
           >
-            Create Ticket
+            Buat Tiket
           </div>
 
           <div
             className={itemClass("profile")}
             onClick={() => navigate("/user/profile")}
           >
-            Profile
+            Profil
           </div>
         </nav>
 

@@ -21,6 +21,80 @@
   padding: 16px 18px;
 }
 
+.user-notif { position: relative; }
+
+.user-notif-btn{
+  position:relative;
+  height:38px;
+  width:42px;
+  border:1px solid #eee;
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer;
+}
+
+.user-notif-badge{
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  border-radius:999px;
+  background:#ff3b30;
+  color:#fff;
+  font-size:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:2px solid #fff;
+}
+
+.user-notif-dd{
+  position:absolute;
+  right:0;
+  top:46px;
+  width:340px;
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.08);
+  overflow:hidden;
+  z-index:50;
+}
+
+.user-notif-head{
+  padding:12px 14px;
+  border-bottom:1px solid #f1f1f1;
+  background:#fafafa;
+}
+
+.user-notif-title{ font-weight:800; }
+.user-notif-sub{ font-size:12px; color:#666; margin-top:2px; }
+
+.user-notif-empty{
+  padding:14px;
+  color:#777;
+  font-size:13px;
+}
+
+.user-notif-list{ max-height:320px; overflow:auto; }
+
+.user-notif-item{
+  width:100%;
+  text-align:left;
+  padding:12px 14px;
+  border:0;
+  background:#fff;
+  cursor:pointer;
+  border-bottom:1px solid #f3f3f3;
+}
+.user-notif-item:hover{ background:#f7f7f7; }
+
+.user-notif-item-title{ font-size:13px; color:#111; line-height:1.2; }
+.user-notif-item-time{ margin-top:6px; font-size:12px; color:#666; }
+
+
 /* =========================================================
    SIDEBAR (tetap / nggak ikut scroll)
 ========================================================= */
@@ -346,6 +420,13 @@
   background: #dbeafe;
   color: #1d4ed8;
 }
+
+.pill.st-review{
+  background: #d503ff;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+}
+
 
 .st-progress {
   background: #fef3c7;

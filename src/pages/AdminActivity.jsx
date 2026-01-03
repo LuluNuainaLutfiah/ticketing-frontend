@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
-import api from "../services/api"; 
+import api from "../services/api";
 
 export default function AdminActivity() {
   const [rows, setRows] = useState([]);
@@ -22,7 +22,6 @@ export default function AdminActivity() {
       );
 
       const paginator = res?.data?.data;
-
       const list = Array.isArray(paginator?.data) ? paginator.data : [];
 
       setRows(list);
@@ -58,22 +57,36 @@ export default function AdminActivity() {
     a?.user_name ||
     (a?.performed_by ? `Pengguna #${a.performed_by}` : "Sistem");
 
+    
   const getTime = (a) => {
     const raw =
       a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
 
     if (!raw) return "-";
 
-    const d = new Date(raw);
+    let s = String(raw).trim();
+
+    // "YYYY-MM-DD HH:mm:ss" → ISO
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+      s = s.replace(" ", "T");
+    }
+
+    // Kalau tidak ada timezone, anggap UTC
+    const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTimezone) s += "Z";
+
+    const d = new Date(s);
     if (Number.isNaN(d.getTime())) return String(raw);
 
-    return d.toLocaleString("id-ID", {
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-    });
+      hour12: false,
+    }).format(d);
   };
 
   const getTicketRef = (a) =>
@@ -90,7 +103,7 @@ export default function AdminActivity() {
     const curr = page || 1;
     const maxBtns = 3;
 
-    let start = Math.max(1, curr - 2);
+    let start = Math.max(1, curr - 1);
     let end = Math.min(total, start + maxBtns - 1);
     start = Math.max(1, end - maxBtns + 1);
 
@@ -172,7 +185,11 @@ export default function AdminActivity() {
                     <strong>{lastPage}</strong>
                   </div>
 
-                  <button className="pg-btn" onClick={onPrev} disabled={!canPrev}>
+                  <button
+                    className="pg-btn"
+                    onClick={onPrev}
+                    disabled={!canPrev}
+                  >
                     ← Sebelumnya
                   </button>
 
@@ -188,7 +205,11 @@ export default function AdminActivity() {
                     ))}
                   </div>
 
-                  <button className="pg-btn" onClick={onNext} disabled={!canNext}>
+                  <button
+                    className="pg-btn"
+                    onClick={onNext}
+                    disabled={!canNext}
+                  >
                     Berikutnya →
                   </button>
                 </div>
