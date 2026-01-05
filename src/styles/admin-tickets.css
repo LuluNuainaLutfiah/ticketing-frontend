@@ -333,6 +333,11 @@
   color: #1d4ed8;
 }
 
+.status-badge.in-review {
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+
 .status-badge.in-progress {
   background-color: #fef3c7;
   color: #92400e;

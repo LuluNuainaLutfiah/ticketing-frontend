@@ -148,6 +148,12 @@
   color: #1d4ed8;
 }
 
+.ut-status-review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+
 .ut-status-progress {
   background: #fef3c7;
   color: #92400e;

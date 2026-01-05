@@ -24,11 +24,11 @@ export default function UserTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
-  // NORMALISASI STATUS DARI DB → "open" / "progress" / "done"
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
+    if (v === "IN_REVIEW") return "review";
     if (v === "IN_PROGRESS") return "progress";
-    if (v === "RESOLVED") return "done";
+    if (v === "RESOLVED" || v === "CLOSED") return "done";
     return "open";
   };
 
@@ -74,7 +74,7 @@ export default function UserTickets() {
 
   // FORMAT TANGGAL RESOLVED
   const resolvedLabel = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date;
+    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
     if (!raw) return "-";
 
     const d = new Date(raw);
@@ -117,6 +117,7 @@ export default function UserTickets() {
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
+    if (st === "review") return "Ditinjau";
     if (st === "progress") return "Sedang Diproses";
     if (st === "done") return "Selesai";
     return "Terbuka";
@@ -142,9 +143,7 @@ export default function UserTickets() {
           <div className="ut-card-header">
             <div>
               <h2 className="ut-card-title">Semua Tiket</h2>
-              <p className="ut-card-sub">
-                {filtered.length} tiket ditemukan
-              </p>
+              <p className="ut-card-sub">{filtered.length} tiket ditemukan</p>
             </div>
 
             <button

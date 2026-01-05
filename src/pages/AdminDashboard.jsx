@@ -25,14 +25,15 @@ export default function AdminDashboard() {
 
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
+    if (val === "IN_REVIEW") return "review";
     if (val === "IN_PROGRESS") return "progress";
     if (val === "CLOSED" || val === "RESOLVED") return "done";
     return "open";
   };
 
+  // Helper ticket
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
-  const getCompletedAt = (t) => t.resolved_at ?? "-";
 
   const getPriority = (t) => {
     const raw = String(t.priority ?? "LOW").toUpperCase();
@@ -72,6 +73,11 @@ export default function AdminDashboard() {
     return formatJakarta(raw);
   };
 
+  const getCompletedAt = (t) => {
+    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
+    return formatJakarta(raw);
+  };
+
   const getMessage = (a) =>
     a?.details || a?.action || a?.activity || a?.message || "-";
 
@@ -83,7 +89,6 @@ export default function AdminDashboard() {
   const getTime = (a) => {
     const raw =
       a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
-
     return formatJakarta(raw);
   };
 
@@ -98,8 +103,7 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       setErrorMsg(
-        err?.response?.data?.message ||
-          "Gagal mengambil data tiket dari server."
+        err?.response?.data?.message || "Gagal mengambil data tiket dari server."
       );
     } finally {
       setLoadingTickets(false);
@@ -111,10 +115,9 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      loadTickets();
-    }, 15000);
+    const interval = setInterval(() => loadTickets(), 15000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -123,7 +126,7 @@ export default function AdminDashboard() {
         setLoadingActivities(true);
 
         const res = await fetchAdminActivities({ page: 1, perPage: 10 });
-        const paginator = res?.data;
+        const paginator = res?.data; 
         const list = Array.isArray(paginator?.data) ? paginator.data : [];
 
         setActivities(list.slice(0, 6));
@@ -146,8 +149,11 @@ export default function AdminDashboard() {
     return id.includes(q) || title.includes(q) || completedAt.includes(q);
   });
 
-  const openTickets = tickets
-    .filter((t) => normalizeStatus(t.status) === "open")
+  const needsActionTickets = tickets
+    .filter((t) => {
+      const st = normalizeStatus(t.status);
+      return st === "open" || st === "review";
+    })
     .sort((a, b) => {
       const da = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
       const db = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
@@ -155,13 +161,15 @@ export default function AdminDashboard() {
     })
     .slice(0, 8);
 
-  const openCount = tickets.filter(
-    (t) => normalizeStatus(t.status) === "open"
-  ).length;
+  const needsActionCount = tickets.filter((t) => {
+    const st = normalizeStatus(t.status);
+    return st === "open" || st === "review";
+  }).length;
 
   const stats = {
     total: tickets.length,
-    pending: openCount,
+    pending: needsActionCount, 
+    review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
       .length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
@@ -178,17 +186,19 @@ export default function AdminDashboard() {
           user={user}
           notifOpen={notifOpen}
           setNotifOpen={setNotifOpen}
-          notifCount={openCount}
-          notifItems={openTickets.map((t) => ({
+          notifCount={needsActionCount}
+          notifItems={needsActionTickets.map((t) => ({
             id: getId(t),
             title: getTitle(t),
             priority: getPriority(t),
             createdAt: createdAtLabel(t),
+            status: normalizeStatus(t.status),
           }))}
         />
 
         {!!errorMsg && <div className="auth-error">{errorMsg}</div>}
 
+        {/* STATS ROW */}
         <div className="admin-stats admin-stats-4">
           <div className="stat-card">
             <div className="stat-icon icon-total">📌</div>
@@ -201,7 +211,7 @@ export default function AdminDashboard() {
             <div className="stat-icon icon-pending">⌛</div>
             <div className="stat-title">Menunggu</div>
             <div className="stat-value">{stats.pending}</div>
-            <div className="stat-note">Perlu ditindaklanjuti</div>
+            <div className="stat-note">Open + Ditinjau</div>
           </div>
 
           <div className="stat-card">
@@ -219,7 +229,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* GRID: RECENT TICKETS + ACTIVITY */}
         <div className="admin-grid">
+          {/* LEFT TABLE */}
           <div className="admin-table-card">
             <div className="admin-table-header">
               <div>
@@ -256,13 +268,16 @@ export default function AdminDashboard() {
                           <td>{id}</td>
                           <td>{getTitle(t)}</td>
                           <td>
-                            <span className={`priority ${priority.toLowerCase()}`}>
+                            <span
+                              className={`priority ${priority.toLowerCase()}`}
+                            >
                               {priority}
                             </span>
                           </td>
                           <td>
                             <span className={`badge ${st}`}>
                               {st === "open" && "Terbuka"}
+                              {st === "review" && "Ditinjau"}
                               {st === "progress" && "Diproses"}
                               {st === "done" && "Selesai"}
                             </span>
@@ -285,6 +300,7 @@ export default function AdminDashboard() {
             )}
           </div>
 
+          {/* RIGHT ACTIVITY */}
           <div className="admin-activity-card">
             <div className="admin-activity-title">Aktivitas Terbaru</div>
             <div className="admin-activity-sub">Pembaruan sistem terbaru</div>

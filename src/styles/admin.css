@@ -169,7 +169,7 @@
 /* ===== STATS ===== */
 .admin-stats-4 {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -178,7 +178,7 @@
   background: white;
   border-radius: 12px;
   padding: 12px 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .stat-icon {
@@ -191,10 +191,22 @@
   margin-bottom: 6px;
 }
 
-.icon-total { background: #dbeafe; color: #1d4ed8; }
-.icon-pending { background: #fee2e2; color: #991b1b; }
-.icon-progress { background: #ede9fe; color: #6d28d9; }
-.icon-done { background: #dcfce7; color: #166534; }
+.icon-total {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.icon-pending {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.icon-progress {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.icon-done {
+  background: #dcfce7;
+  color: #166534;
+}
 
 .stat-title {
   font-size: 12px;
@@ -229,7 +241,7 @@
   background: white;
   border-radius: 12px;
   padding: 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
   /* DITAMBAH: supaya area tabel bisa scroll di dalam card */
   height: 520px;
@@ -242,7 +254,7 @@
 }
 
 .admin-table-title {
-   font-size: 14px;
+  font-size: 14px;
   font-weight: 600;
   margin: 0;
 }
@@ -291,7 +303,8 @@
 }
 
 /* ===== BADGES ===== */
-.badge, .priority {
+.badge,
+.priority {
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 11px;
@@ -299,21 +312,47 @@
   display: inline-block;
 }
 
-.badge.open { background: #dbeafe; color: #1d4ed8; }
-.badge.pending { background: #fee2e2; color: #991b1b; }
-.badge.progress { background: #fef3c7; color: #92400e; }
-.badge.done { background: #dcfce7; color: #166534; }
+.badge.open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.badge.review {
+  background: #ede9fe;
+  color: #6d28d9;
+}
 
-.priority.high { background: #fee2e2; color: #991b1b; }
-.priority.medium { background: #fef3c7; color: #92400e; }
-.priority.low { background: #e5e7eb; color: #374151; }
+.badge.pending {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badge.progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge.done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.priority.high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.priority.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+.priority.low {
+  background: #e5e7eb;
+  color: #374151;
+}
 
 /* ===== ACTIVITY CARD ===== */
 .admin-activity-card {
   background: white;
   border-radius: 12px;
   padding: 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 
   /* DITAMBAH: supaya list activity bisa scroll di dalam card */
   height: 520px;
@@ -392,7 +431,7 @@
 .logout-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
   display: flex;
   justify-content: center;
@@ -406,8 +445,8 @@
   padding: 24px;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 6px 25px rgba(0,0,0,0.15);
-  animation: fadeIn .2s ease;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.2s ease;
 }
 
 .logout-title {
@@ -603,18 +642,29 @@
   background: #f9fafb;
 }
 
-
 /* Animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(.97); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* ===== responsive ===== */
 @media (max-width: 900px) {
-  .admin-sidebar { display: none; }
-  .admin-stats-4 { grid-template-columns: repeat(2,1fr); }
-  .admin-grid { grid-template-columns: 1fr; }
+  .admin-sidebar {
+    display: none;
+  }
+  .admin-stats-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
 
   /* DITAMBAH: di mobile, card jangan fixed tinggi biar enak */
   .admin-table-card,
@@ -629,6 +679,10 @@
 }
 
 @media (max-width: 520px) {
-  .admin-stats-4 { grid-template-columns: 1fr; }
-  .admin-search-input { width: 160px; }
+  .admin-stats-4 {
+    grid-template-columns: 1fr;
+  }
+  .admin-search-input {
+    width: 160px;
+  }
 }
