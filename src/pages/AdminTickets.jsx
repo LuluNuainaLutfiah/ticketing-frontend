@@ -19,6 +19,8 @@ export default function AdminTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
     if (val === "IN_REVIEW") return "in_review";
@@ -160,9 +162,7 @@ export default function AdminTickets() {
       setUpdatingId(idTicket);
 
       const result = await adminUpdateTicketStatus(idTicket, newStatus);
-
       const updatedTicket = result?.data ?? result;
-
       const merged = { ...ticket, ...updatedTicket };
 
       setTickets((prev) =>
@@ -194,9 +194,7 @@ export default function AdminTickets() {
     try {
       const idTicket = getRealId(updated);
       const fd = new FormData();
-
       fd.append("message_body", "Tiket Anda sedang ditinjau.");
-
       await sendTicketMessage(idTicket, fd);
     } catch (err) {
       console.error(err);
@@ -208,24 +206,19 @@ export default function AdminTickets() {
     if (st !== "IN_REVIEW") return;
 
     const updated = await handleUpdateStatus(ticket, "IN_PROGRESS");
-    if (updated) {
-      setSelectedTicket(updated);
-    }
+    if (updated) setSelectedTicket(updated);
   };
 
   const handleResolve = async (ticket) => {
     const st = String(ticket.status || "").toUpperCase();
     if (st !== "IN_PROGRESS") return;
 
-    const updated = await handleUpdateStatus(ticket, "RESOLVED");
-    if (updated) {
-    }
+    await handleUpdateStatus(ticket, "RESOLVED");
   };
 
   const handleReopen = async (ticket) => {
     const st = String(ticket.status || "").toUpperCase();
     if (st !== "RESOLVED" && st !== "CLOSED") return;
-
     await handleUpdateStatus(ticket, "OPEN");
   };
 
@@ -265,7 +258,6 @@ export default function AdminTickets() {
             className="action-btn purple"
             disabled={isLoading}
             onClick={() => toggleChat(t)}
-            title="Buka/tutup chat"
           >
             Chat
           </button>
@@ -298,7 +290,11 @@ export default function AdminTickets() {
 
   return (
     <div className="admin-page tickets-layout">
-      <AdminSidebar active="tickets" />
+      <AdminSidebar
+        active="tickets"
+        mobileOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <main className="admin-main">
         <div className="tickets-page">
@@ -311,6 +307,15 @@ export default function AdminTickets() {
             </div>
 
             <div className="tickets-header-right">
+              <button
+                type="button"
+                className="tickets-hamburger"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Buka menu"
+              >
+                ☰
+              </button>
+
               <div className="tickets-search">
                 <input
                   type="text"

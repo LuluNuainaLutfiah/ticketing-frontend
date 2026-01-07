@@ -1,156 +1,57 @@
-/* ==== LAYOUT DASAR ADMIN (berpengaruh ke semua halaman admin) ==== */
-
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: #f4f5f7;
-}
-
-.admin-sidebar {
-  width: 260px;
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 16px;
-}
-
-.admin-sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 24px;
-}
-
-.user-brand {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.admin-sidebar-brandtext .brand-main {
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.admin-sidebar-brandtext .brand-sub {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-/* menu di sidebar */
-.admin-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.admin-menu-item {
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.admin-menu-item:hover:not(.active) {
-  background-color: #f3f4f6;
-}
-
-.admin-menu-item.active {
-  background-color: #16a34a;
-  color: #ffffff;
-  font-weight: 500;
-}
-
-/* tombol logout di bawah sidebar */
-.admin-logout {
-  margin-top: 24px;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background-color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.admin-logout:hover {
-  background-color: #f3f4f6;
-}
-
-/* area konten kanan */
-.admin-main {
-  flex: 1;
-}
-
-/* ==== LAYOUT KHUSUS HALAMAN TICKETS ==== */
-
 .tickets-layout .admin-main {
   padding: 24px 32px;
-  background-color: #f4f5f7;
+  background: #f4f5f7;
 }
 
-/* wrapper konten */
 .tickets-page {
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* header atas: judul + search */
 .tickets-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .tickets-title {
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
+  line-height: 1.2;
 }
 
 .tickets-subtitle {
-  margin-top: 4px;
-  font-size: 14px;
+  margin-top: 6px;
+  font-size: 13px;
   color: #6b7280;
 }
 
 .tickets-header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 240px;
 }
 
-.tickets-error {
-  margin-bottom: 10px;
-  font-size: 13px;
-  color: #b91c1c;
-}
-
-.tickets-loading {
-  padding: 12px 4px;
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* search bar */
 .tickets-search {
   position: relative;
+  width: 100%;
+  max-width: 320px;
 }
 
 .tickets-search input {
-  padding: 8px 32px 8px 12px;
+  width: 100%;
+  padding: 9px 34px 9px 12px;
   border-radius: 999px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
-  min-width: 220px;
-  background-color: #ffffff;
+  background: #fff;
 }
 
 .tickets-search input:focus {
@@ -159,42 +60,60 @@
 
 .tickets-search .search-icon {
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 14px;
   opacity: 0.7;
+  pointer-events: none;
 }
 
-/* card besar */
+.tickets-error {
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.tickets-loading {
+  padding: 12px 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .tickets-card {
-  background-color: #ffffff;
+  background: #fff;
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 18px 18px;
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
 }
 
-/* header card */
 .tickets-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .tickets-card-header h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .tickets-card-header p {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
 }
 
-/* filter chips */
 .tickets-filters {
   display: flex;
   align-items: center;
@@ -205,14 +124,24 @@
 .filter-chip {
   border-radius: 999px;
   border: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  background: #f9fafb;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: #f3f4f6;
+}
+
+.filter-chip.active {
+  border-color: #2563eb;
+  background: #e0ecff;
 }
 
 .filter-chip .dot {
@@ -222,39 +151,32 @@
 }
 
 .filter-chip .dot.open {
-  background-color: #3b82f6;
+  background: #3b82f6;
 }
 
 .filter-chip .dot.in-review {
-  background-color: #fb24e9;
+  background: #6d28d9;
 }
 
 .filter-chip .dot.in-progress {
-  background-color: #f59e0b;
+  background: #f59e0b;
 }
 
 .filter-chip .dot.closed {
-  background-color: #10b981;
+  background: #10b981;
 }
 
-.filter-chip:hover {
-  background-color: #f3f4f6;
-}
-
-.filter-chip.active {
-  border-color: #2563eb;
-  background-color: #e0ecff;
-}
-
-/* tabel */
 .tickets-table-wrapper {
+  width: 100%;
   overflow-x: auto;
+  border-radius: 12px;
 }
 
 .tickets-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
+  min-width: 920px;
 }
 
 .tickets-table thead tr {
@@ -263,46 +185,41 @@
 
 .tickets-table th,
 .tickets-table td {
-  padding: 10px 8px;
+  padding: 10px 10px;
   text-align: left;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .tickets-table th {
-  font-weight: 500;
+  font-weight: 800;
   color: #6b7280;
-  font-size: 13px;
+  font-size: 12px;
+  background: #fff;
 }
 
 .tickets-table tbody tr:nth-child(even) {
-  background-color: #f9fafb;
+  background: #f9fafb;
 }
 
 .tickets-table tbody tr:hover {
-  background-color: #eef2ff;
+  background: #eef2ff;
 }
 
 .empty-row {
   text-align: center;
-  padding: 24px 0;
+  padding: 22px 0;
   color: #6b7280;
+  font-size: 12px;
 }
 
-/* judul tiket sebagai link */
-.ticket-title-cell .link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: #2563eb;
-  cursor: pointer;
+.ticket-title-cell {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.ticket-title-cell .link-button:hover {
-  text-decoration: underline;
-}
-
-/* badge priority & status */
 .priority-badge,
 .status-badge {
   display: inline-flex;
@@ -310,145 +227,241 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 800;
 }
 
 .priority-badge.high {
-  background-color: #fee2e2;
+  background: #fee2e2;
   color: #b91c1c;
 }
 
 .priority-badge.medium {
-  background-color: #fef3c7;
+  background: #fef3c7;
   color: #92400e;
 }
 
 .priority-badge.low {
-  background-color: #e0f2fe;
+  background: #e0f2fe;
   color: #1d4ed8;
 }
 
 .status-badge.open {
-  background-color: #dbeafe;
+  background: #dbeafe;
   color: #1d4ed8;
 }
 
 .status-badge.in-review {
-  background-color: #ede9fe;
+  background: #ede9fe;
   color: #6d28d9;
 }
 
 .status-badge.in-progress {
-  background-color: #fef3c7;
+  background: #fef3c7;
   color: #92400e;
 }
 
 .status-badge.closed {
-  background-color: #dcfce7;
+  background: #dcfce7;
   color: #166534;
 }
 
-/* ===================================== */
-/* ACTION BUTTONS DI KOLOM TABEL        */
-/* ===================================== */
-
-/* kolom paling kanan (Action) biar agak lega */
-.tickets-table td:last-child {
-  white-space: nowrap;
+.action-stack {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
 }
 
-/* tombol aksi dasar */
 .action-btn {
   border: none;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
-  margin-right: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
 }
 
-/* warna-warna varian */
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .action-btn.blue {
-  background-color: #dbeafe;
+  background: #dbeafe;
   color: #1d4ed8;
 }
 
 .action-btn.blue:hover {
-  background-color: #bfdbfe;
+  background: #bfdbfe;
 }
 
 .action-btn.green {
-  background-color: #dcfce7;
+  background: #dcfce7;
   color: #166534;
 }
 
 .action-btn.green:hover {
-  background-color: #bbf7d0;
+  background: #bbf7d0;
 }
 
 .action-btn.gray {
-  background-color: #e5e7eb;
+  background: #e5e7eb;
   color: #374151;
 }
 
 .action-btn.gray:hover {
-  background-color: #d1d5db;
+  background: #d1d5db;
 }
 
-/* state disabled (pas lagi "Saving...") */
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-  transform: none;
-  box-shadow: none;
-}
-
-/* tombol chat */
-.action-btn.chat {
-  background-color: #ede9fe;  /* ungu muda */
+.action-btn.purple {
+  background: #ede9fe;
   color: #5b21b6;
 }
-.action-btn.chat:hover {
-  background-color: #ddd6fe;
+
+.action-btn.purple:hover {
+  background: #ddd6fe;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 6000;
+}
 
-/* ============================== */
-/* CHAT PANEL (ASLI)              */
-/* ============================== */
+.modal-card {
+  width: 920px;
+  max-width: 100%;
+  height: 75vh;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: #f9fafb;
+}
+
+.modal-title {
+  padding: 16px 16px 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.modal-sub {
+  padding: 6px 16px 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.modal-body {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.modal-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  font-size: 12px;
+  align-items: center;
+}
+
+.modal-row span {
+  color: #6b7280;
+}
+
+.modal-desc {
+  margin-top: 4px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+}
+
+.modal-desc-title {
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.modal-desc p {
+  margin: 0;
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.modal-chat-wrapper {
+  margin-top: 6px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
 
 .ticket-chat {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   padding: 12px 14px;
-  background: #ffffff;
+  background: #fff;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
 }
 
 .ticket-chat-header h3 {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
+  margin: 0;
 }
 
 .ticket-chat-sub {
   font-size: 11px;
   color: #6b7280;
+  margin-top: 2px;
 }
 
 .ticket-chat-body {
-  max-height: 320px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #f9fafb;
-  padding: 8px;
+  padding: 10px;
 }
 
 .ticket-chat-empty {
@@ -482,6 +495,7 @@
   align-items: center;
   justify-content: center;
   margin-right: 6px;
+  flex-shrink: 0;
 }
 
 .chat-row-right .chat-avatar {
@@ -492,11 +506,11 @@
 
 .chat-bubble {
   max-width: 70%;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 6px 8px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 7px 9px;
   font-size: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .chat-row-right .chat-bubble {
@@ -506,21 +520,24 @@
 .chat-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 2px;
+  gap: 10px;
+  margin-bottom: 3px;
 }
 
 .chat-sender {
-  font-weight: 600;
+  font-weight: 900;
   font-size: 11px;
 }
 
 .chat-time {
   font-size: 10px;
   color: #6b7280;
+  white-space: nowrap;
 }
 
 .chat-text {
   margin-bottom: 4px;
+  word-break: break-word;
 }
 
 .chat-attachments {
@@ -543,23 +560,36 @@
   font-size: 11px;
   color: #b45309;
   background: #fef3c7;
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.ticket-chat-error {
+  font-size: 12px;
+  color: #991b1b;
+  background: #fee2e2;
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 
 .ticket-chat-form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ticket-chat-input {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-size: 12px;
   resize: none;
+  outline: none;
+}
+
+.ticket-chat-input:focus {
+  border-color: #2563eb;
 }
 
 .ticket-chat-form-bottom {
@@ -582,13 +612,18 @@
   font-size: 11px;
   color: #6b7280;
   margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
 }
 
 .ticket-chat-send-btn {
-  padding: 6px 14px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: none;
   font-size: 12px;
+  font-weight: 900;
   background: #16a34a;
   color: #fff;
   cursor: pointer;
@@ -599,176 +634,81 @@
   cursor: not-allowed;
 }
 
-.modal-body {
-  max-height: 70vh;
-  overflow-y: auto;
+.tickets-header-right {
+  gap: 10px;
 }
 
-.modal-chat-wrapper {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.ticket-chat-error {
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: #b91c1c;
-  background: #fee2e2;
-  border-radius: 6px;
-  padding: 6px 8px;
-}
-
-
-/* overlay jangan scroll */
-.modal-overlay {
-  overflow: hidden;
-}
-
-/* modal jangan punya scrollbar panjang */
-.modal-card {
-  max-height: 75vh;     /* modal tidak panjang */
-  overflow: hidden;     /* HILANGKAN scroll panjang */
-  display: flex;
-  flex-direction: column;
-}
-
-/* modal body tidak boleh scroll */
-.modal-body {
-  max-height: none;     /* override max-height 70vh */
-  overflow: hidden;     /* HILANGKAN scroll panjang */
-  display: flex;
-  flex-direction: column;
-  min-height: 0;        /* penting */
-}
-
-/* chat wrapper ambil sisa ruang */
-.modal-chat-wrapper {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
-.modal-chat-wrapper .ticket-chat {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  min-height: 0 !important;
-}
-
-.modal-chat-wrapper .ticket-chat-body {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  max-height: none !important;
-}
-
-.modal-chat-wrapper .ticket-chat-form {
-  flex: 0 0 auto !important;
-  margin-top: 8px;
-  background: #ffffff;          /* biar keliatan “nempel” */
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
-}
-
-/* matikan scroll di luar room chat */
-.modal-overlay { overflow: hidden !important; }
-
-.modal-card{
-  max-height: 75vh !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* modal-body: jangan scroll, tapi tetap boleh tampil */
-.modal-body{
-  flex: 1 1 auto !important;
-  overflow: hidden !important;   /* kunci: no scroll di luar chat */
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* chat wrapper ambil sisa tinggi modal */
-.modal-chat-wrapper{
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  display: flex !important;
-}
-
-/* room chat full tinggi wrapper */
-.modal-chat-wrapper .ticket-chat{
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.modal-chat-wrapper .ticket-chat-body{
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  max-height: none !important;
-}
-
-.modal-chat-wrapper .ticket-chat-form{
-  flex: 0 0 auto !important;
-  position: sticky;     /* biar makin "nempel" */
-  bottom: 0;
-  background: #ffffff;
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.modal-overlay { overflow: hidden !important; }
-
-.modal-card{
-  height: 75vh !important;        /* IMPORTANT: bukan max-height */
-  max-height: 75vh !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* body modal jangan scroll, tapi harus flex & punya tinggi */
-.modal-body{
-  flex: 1 1 auto !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;       /* kunci */
-}
-
-/* wrapper chat ambil sisa tinggi modal */
-.modal-chat-wrapper{
-  flex: 1 1 auto !important;
-  display: flex !important;
-  min-height: 0 !important;       /* kunci */
-}
-
-/* room chat full tinggi */
-.modal-chat-wrapper .ticket-chat{
-  flex: 1 1 auto !important;
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;       /* kunci */
-}
-
-.modal-chat-wrapper .ticket-chat-body{
-  flex: 1 1 auto !important;
-  min-height: 0 !important;       /* kunci */
-  overflow-y: auto !important;
-  max-height: none !important;    /* override max-height 320px */
-}
-
-.modal-chat-wrapper .ticket-chat-form{
-  flex: 0 0 auto !important;
+.tickets-hamburger {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
   background: #fff;
-  padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
+.tickets-hamburger:hover {
+  background: #f9fafb;
+}
 
+@media (max-width: 900px) {
+  .tickets-hamburger {
+    display: grid;
+    place-items: center;
+  }
+
+  .tickets-search {
+    flex: 1;
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .tickets-layout .admin-main {
+    padding: 16px 12px;
+  }
+
+  .tickets-page {
+    max-width: 100%;
+  }
+
+  .tickets-search {
+    max-width: 100%;
+  }
+
+  .tickets-card {
+    padding: 14px;
+  }
+
+  .tickets-table {
+    min-width: 860px;
+  }
+}
+
+@media (max-width: 520px) {
+  .tickets-title {
+    font-size: 20px;
+  }
+
+  .tickets-header-right {
+    min-width: 100%;
+    justify-content: flex-start;
+  }
+
+  .filter-chip {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .modal-card {
+    height: 82vh;
+  }
+
+  .modal-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
