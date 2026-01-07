@@ -1,11 +1,13 @@
-// src/pages/UserTickets.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-tickets.css";
 import TicketChatPanel from "./TicketChatPanel";
 import { fetchUserTickets } from "../services/tickets";
 
 export default function UserTickets() {
+  const navigate = useNavigate();
+
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
@@ -24,6 +26,8 @@ export default function UserTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
     if (v === "IN_REVIEW") return "review";
@@ -32,22 +36,48 @@ export default function UserTickets() {
     return "open";
   };
 
-  // GET DATA API
+  const formatJakarta = (raw) => {
+    if (!raw) return "-";
+    let s = String(raw).trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
+    const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTimezone) s += "Z";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return String(raw);
+
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d);
+  };
+
+  const createdLabel = (t) => {
+    const raw = t.created_at ?? t.createdAt ?? t.date;
+    return formatJakarta(raw);
+  };
+
+  const resolvedLabel = (t) => {
+    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
+    return formatJakarta(raw);
+  };
+
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setErrorMsg("");
-
         const data = await fetchUserTickets();
         const list = Array.isArray(data?.data) ? data.data : data;
-
         setTickets(Array.isArray(list) ? list : []);
       } catch (err) {
         console.error(err);
         setErrorMsg(
-          err?.response?.data?.message ||
-            "Gagal mengambil data tiket dari server."
+          err?.response?.data?.message || "Gagal mengambil data tiket dari server."
         );
         setTickets([]);
       } finally {
@@ -56,53 +86,15 @@ export default function UserTickets() {
     })();
   }, []);
 
-  // FORMAT TANGGAL CREATED
-  const createdLabel = (t) => {
-    const raw = t.created_at ?? t.createdAt ?? t.date;
-    if (!raw) return "-";
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
-
-    return d.toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // FORMAT TANGGAL RESOLVED
-  const resolvedLabel = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
-    if (!raw) return "-";
-
-    const d = new Date(raw);
-    if (Number.isNaN(d.getTime())) return raw;
-
-    return d.toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // FILTER: search + status
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
-
     const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
-    const title = String(t.title ?? "").toLowerCase();
-    const category = String(t.category ?? "").toLowerCase();
+    const title = String(t.title ?? t.subject ?? "").toLowerCase();
+    const category = String(t.category ?? t.category_name ?? "").toLowerCase();
     const desc = String(t.description ?? "").toLowerCase();
 
     const matchText =
-      id.includes(q) ||
-      title.includes(q) ||
-      category.includes(q) ||
-      desc.includes(q);
+      id.includes(q) || title.includes(q) || category.includes(q) || desc.includes(q);
 
     const st = normalizeStatus(t.status);
     const matchStatus = statusFilter === "all" ? true : st === statusFilter;
@@ -110,10 +102,8 @@ export default function UserTickets() {
     return matchText && matchStatus;
   });
 
-  const priorityClass = (p) =>
-    `ut-priority ut-priority-${String(p || "").toLowerCase()}`;
-
-  const statusClass = (s) => `ut-status ut-status-${normalizeStatus(s)}`;
+  const priorityClass = (p) => `ut-pill ut-pri-${String(p || "").toLowerCase()}`;
+  const statusClass = (s) => `ut-pill ut-st-${normalizeStatus(s)}`;
 
   const statusLabel = (s) => {
     const st = normalizeStatus(s);
@@ -123,38 +113,68 @@ export default function UserTickets() {
     return "Terbuka";
   };
 
+  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="user-page">
-      <UserSidebar active="my-tickets" />
+      <UserSidebar active="my-tickets" mobileOpen={sidebarOpen} onClose={closeSidebar} />
 
-      <main className="user-main ut-no-topbar">
-        {/* HEADER */}
+      <main className="user-main">
+        <div className="ut-mobilebar">
+          <button className="ut-hamburger" onClick={openSidebar} aria-label="Buka menu">
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <div className="ut-mobilebar-title">
+            <div className="ut-mobilebar-main">Tiket Saya</div>
+            <div className="ut-mobilebar-sub">Kelola tiket bantuan Anda</div>
+          </div>
+        </div>
+
         <header className="ut-header">
           <h1 className="ut-header-title">Tiket Saya</h1>
-          <p className="ut-header-sub">
-            Lihat dan kelola semua tiket bantuan Anda.
-          </p>
+          <p className="ut-header-sub">Lihat dan kelola semua tiket bantuan Anda.</p>
         </header>
+
+        <section className="ut-controls">
+          <input
+            className="ut-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cari tiket..."
+          />
+
+          <select
+            className="ut-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Semua Status</option>
+            <option value="open">Terbuka</option>
+            <option value="review">Ditinjau</option>
+            <option value="progress">Sedang Diproses</option>
+            <option value="done">Selesai</option>
+          </select>
+
+          <button className="ut-new-btn" onClick={() => navigate("/user/tickets/create")}>
+            + Buat Tiket Baru
+          </button>
+        </section>
 
         {!!errorMsg && <div className="ut-error">{errorMsg}</div>}
 
-        {/* CARD TABLE */}
         <section className="ut-card">
           <div className="ut-card-header">
             <div>
               <h2 className="ut-card-title">Semua Tiket</h2>
               <p className="ut-card-sub">{filtered.length} tiket ditemukan</p>
             </div>
-
-            <button
-              className="ut-new-btn"
-              onClick={() => (window.location.href = "/user/tickets/create")}
-            >
-              + Buat Tiket Baru
-            </button>
           </div>
 
-          <div className="ut-table-wrapper">
+          <div className="ut-table-wrap">
             <table className="ut-table">
               <thead>
                 <tr>
@@ -184,34 +204,29 @@ export default function UserTickets() {
                   </tr>
                 ) : (
                   filtered.map((t) => {
-                    const key = t.id_ticket ?? t.id ?? t.code_ticket;
-                    const ticketId = t.code_ticket ?? "-";
-                    const title = t.title ?? "-";
-                    const category = t.category ?? "-";
+                    const key = t.id_ticket ?? t.id ?? t.code_ticket ?? Math.random();
+                    const ticketId = t.code_ticket ?? t.id_ticket ?? "-";
+                    const title = t.title ?? t.subject ?? "-";
+                    const category = t.category ?? t.category_name ?? "-";
                     const priority = t.priority ?? "LOW";
 
                     return (
                       <tr key={key}>
-                        <td>{ticketId}</td>
+                        <td className="ut-nowrap">{ticketId}</td>
                         <td className="ut-title-cell">{title}</td>
-                        <td>{category}</td>
+                        <td className="ut-nowrap">{category}</td>
                         <td>
                           <span className={priorityClass(priority)}>
                             {String(priority).toUpperCase()}
                           </span>
                         </td>
                         <td>
-                          <span className={statusClass(t.status)}>
-                            {statusLabel(t.status)}
-                          </span>
+                          <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>
                         </td>
-                        <td>{resolvedLabel(t)}</td>
-                        <td>{createdLabel(t)}</td>
+                        <td className="ut-nowrap">{resolvedLabel(t)}</td>
+                        <td className="ut-nowrap">{createdLabel(t)}</td>
                         <td>
-                          <button
-                            className="ut-view-btn"
-                            onClick={() => setSelectedTicket(t)}
-                          >
+                          <button className="ut-view-btn" onClick={() => setSelectedTicket(t)}>
                             Lihat
                           </button>
                         </td>
@@ -225,7 +240,6 @@ export default function UserTickets() {
         </section>
       </main>
 
-      {/* MODAL DETAIL + CHAT */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -244,18 +258,18 @@ export default function UserTickets() {
             <div className="modal-body">
               <div className="modal-row">
                 <span>Judul</span>
-                <strong>{selectedTicket.title ?? "-"}</strong>
+                <strong>{selectedTicket.title ?? selectedTicket.subject ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
                 <span>Kategori</span>
-                <strong>{selectedTicket.category ?? "-"}</strong>
+                <strong>{selectedTicket.category ?? selectedTicket.category_name ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
                 <span>Prioritas</span>
                 <strong>
-                  <span className={priorityClass(selectedTicket.priority)}>
+                  <span className={priorityClass(selectedTicket.priority ?? "LOW")}>
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
                 </strong>
@@ -286,7 +300,7 @@ export default function UserTickets() {
               </div>
 
               <div className="modal-chat-wrapper">
-                <TicketChatPanel ticket={selectedTicket} />
+                <TicketChatPanel ticket={selectedTicket} user={user} />
               </div>
             </div>
           </div>

@@ -17,13 +17,15 @@ export default function UserCreateTicket() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [priority, setPriority] = useState(""); // LOW, MEDIUM, HIGH
+  const [priority, setPriority] = useState("");
   const [description, setDescription] = useState("");
   const [attachment, setAttachment] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -49,13 +51,11 @@ export default function UserCreateTicket() {
 
       const formData = new FormData();
       formData.append("title", cleanTitle);
-      formData.append("category", cleanCategory); // manual input
-      formData.append("priority", priority); // LOW/MEDIUM/HIGH
+      formData.append("category", cleanCategory);
+      formData.append("priority", priority);
       formData.append("description", cleanDesc);
 
-      if (attachment) {
-        formData.append("attachment", attachment);
-      }
+      if (attachment) formData.append("attachment", attachment);
 
       await createUserTicket(formData);
 
@@ -72,23 +72,35 @@ export default function UserCreateTicket() {
       }, 800);
     } catch (err) {
       console.error(err);
-      setErrorMsg(
-        err?.response?.data?.message || "Gagal mengirim tiket ke server."
-      );
+      setErrorMsg(err?.response?.data?.message || "Gagal mengirim tiket ke server.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate("/user/tickets");
-  };
+  const handleCancel = () => navigate("/user/tickets");
+
+  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <div className="user-page">
-      <UserSidebar active="create-ticket" />
+      <UserSidebar active="create-ticket" mobileOpen={sidebarOpen} onClose={closeSidebar} />
 
       <main className="user-main uct-main">
+        <div className="uct-mobilebar">
+          <button className="uct-hamburger" onClick={openSidebar} aria-label="Buka menu">
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <div className="uct-mobilebar-title">
+            <div className="uct-mobilebar-main">Buat Tiket</div>
+            <div className="uct-mobilebar-sub">Ajukan permintaan bantuan</div>
+          </div>
+        </div>
+
         <header className="uct-header">
           <h1 className="uct-header-title">Buat Tiket Baru</h1>
           <p className="uct-header-sub">Ajukan permintaan bantuan baru.</p>
@@ -138,6 +150,7 @@ export default function UserCreateTicket() {
                     onChange={(e) => setCategory(e.target.value)}
                     autoComplete="off"
                   />
+
                   <datalist id="category-suggestions">
                     <option value="Email" />
                     <option value="Network" />
@@ -151,6 +164,7 @@ export default function UserCreateTicket() {
                   <label className="uct-label">
                     Tingkat Prioritas <span className="uct-required">*</span>
                   </label>
+
                   <select
                     className="uct-input"
                     value={priority}
@@ -168,6 +182,7 @@ export default function UserCreateTicket() {
                 <label className="uct-label">
                   Deskripsi Detail <span className="uct-required">*</span>
                 </label>
+
                 <textarea
                   className="uct-textarea"
                   placeholder="Jelaskan masalah Anda sedetail mungkin..."
@@ -175,9 +190,10 @@ export default function UserCreateTicket() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
+
                 <div className="uct-hint">
-                  Semakin detail informasi yang Anda berikan, semakin cepat kami
-                  dapat menyelesaikan masalah Anda.
+                  Semakin detail informasi yang Anda berikan, semakin cepat kami dapat
+                  menyelesaikan masalah Anda.
                 </div>
               </div>
 
@@ -191,14 +207,14 @@ export default function UserCreateTicket() {
                     onChange={handleFileChange}
                     accept=".png,.jpg,.jpeg,.pdf"
                   />
+
                   <div className="uct-upload-icon">📎</div>
+
                   <div className="uct-upload-text">
-                    {attachment
-                      ? attachment.name
-                      : "Klik untuk unggah atau tarik dan lepas file"}
-                    <div className="uct-upload-sub">
-                      PNG, JPG, PDF maksimal 10MB
+                    <div className={`uct-upload-name ${attachment ? "has" : ""}`}>
+                      {attachment ? attachment.name : "Klik untuk unggah file"}
                     </div>
+                    <div className="uct-upload-sub">PNG, JPG, PDF maksimal 10MB</div>
                   </div>
                 </label>
               </div>

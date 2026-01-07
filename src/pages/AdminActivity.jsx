@@ -1,83 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-activity.css";
-import api from "../services/api";
+import { fetchAdminActivities } from "../services/activity";
 
 export default function AdminActivity() {
-  const [rows, setRows] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [page, setPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
   const perPage = 10;
 
-  const loadActivities = async ({ silent = false, targetPage = page } = {}) => {
-    try {
-      if (!silent) setLoading(true);
-      setErrorMsg("");
-
-      const res = await api.get(
-        `/admin/dashboard/recent-activities?page=${targetPage}&per_page=${perPage}`
-      );
-
-      const paginator = res?.data?.data;
-      const list = Array.isArray(paginator?.data) ? paginator.data : [];
-
-      setRows(list);
-      setPage(paginator?.current_page ?? targetPage);
-      setLastPage(paginator?.last_page ?? 1);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(
-        err?.response?.data?.message ||
-          "Gagal mengambil log aktivitas dari server."
-      );
-      setRows([]);
-      setLastPage(1);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadActivities({ silent: false, targetPage: page });
-
-    const interval = setInterval(() => {
-      loadActivities({ silent: true, targetPage: page });
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [page]);
-
-  const getMessage = (a) => a?.details || a?.action || a?.activity || "-";
+  const getMessage = (a) =>
+    a?.details || a?.action || a?.activity || a?.message || "-";
 
   const getActor = (a) =>
     a?.user?.name ||
     a?.user_name ||
     (a?.performed_by ? `Pengguna #${a.performed_by}` : "Sistem");
 
-    
-  const getTime = (a) => {
-    const raw =
-      a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime;
-
+  const formatJakarta = (raw) => {
     if (!raw) return "-";
-
     let s = String(raw).trim();
-
-    // "YYYY-MM-DD HH:mm:ss" → ISO
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
-      s = s.replace(" ", "T");
-    }
-
-    // Kalau tidak ada timezone, anggap UTC
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
     const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
     if (!hasTimezone) s += "Z";
-
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return String(raw);
-
     return new Intl.DateTimeFormat("id-ID", {
       timeZone: "Asia/Jakarta",
       year: "numeric",
@@ -89,71 +40,109 @@ export default function AdminActivity() {
     }).format(d);
   };
 
-  const getTicketRef = (a) =>
-    a?.ticket?.code_ticket || a?.ticket?.title || a?.ticket_code || "-";
+  const getTime = (a) =>
+    formatJakarta(
+      a?.action_time || a?.time || a?.created_at || a?.timestamp || a?.datetime
+    );
 
-  const canPrev = page > 1;
-  const canNext = page < lastPage;
+  const getTicketLabel = (a) => {
+    const t = a?.ticket;
+    if (!t) return "-";
+    return t.code_ticket || t.id_ticket || t.id || t.title || "-";
+  };
 
-  const onNext = () => canNext && setPage((p) => p + 1);
-  const onPrev = () => canPrev && setPage((p) => p - 1);
+  const load = async (p = page) => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
 
-  const pageNumbers = useMemo(() => {
-    const total = lastPage || 1;
-    const curr = page || 1;
-    const maxBtns = 3;
+      const res = await fetchAdminActivities({ page: p, perPage });
+      const paginator = res?.data ?? res;
+      const list = Array.isArray(paginator?.data) ? paginator.data : [];
 
-    let start = Math.max(1, curr - 1);
-    let end = Math.min(total, start + maxBtns - 1);
-    start = Math.max(1, end - maxBtns + 1);
+      setItems(list);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal mengambil aktivitas dari server."
+      );
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const nums = [];
-    for (let i = start; i <= end; i++) nums.push(i);
-    return nums;
-  }, [page, lastPage]);
+  useEffect(() => {
+    load(1);
+  }, []);
+
+  useEffect(() => {
+    load(page);
+  }, [page]);
+
+  const pageCount = useMemo(() => {
+    return Math.max(1, Math.ceil((items?.length ? page * perPage : page) / perPage));
+  }, [items, page]);
 
   return (
     <div className="admin-page activity-layout">
-      <AdminSidebar active="activity" />
+      <AdminSidebar
+        active="activity"
+        mobileOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <main className="admin-main">
         <div className="activity-wrapper">
-          <header className="activity-header">
-            <h1 className="activity-header-title">Log Aktivitas</h1>
-            <p className="activity-header-sub">
-              Pantau aktivitas dan perubahan pada sistem
-            </p>
-          </header>
+          <div className="activity-top">
+            <div>
+              <h1 className="activity-header-title">Aktivitas</h1>
+              <div className="activity-header-sub">
+                Riwayat pembaruan dan aktivitas terbaru sistem
+              </div>
+            </div>
 
-          {errorMsg && <div className="auth-error">{errorMsg}</div>}
+            <div className="activity-top-right">
+              <button
+                type="button"
+                className="activity-hamburger"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Buka menu"
+              >
+                ☰
+              </button>
 
-          <section className="activity-card">
+              <button
+                type="button"
+                className="activity-refresh-btn"
+                onClick={() => load(page)}
+                disabled={loading}
+              >
+                {loading ? "Memuat..." : "Refresh"}
+              </button>
+            </div>
+          </div>
+
+          {errorMsg && <div className="activity-error">{errorMsg}</div>}
+
+          <div className="activity-card">
             <div className="activity-card-head">
               <div>
-                <div className="activity-card-title">Log Aktivitas Sistem</div>
+                <div className="activity-card-title">Aktivitas Terbaru</div>
                 <div className="activity-card-sub">
-                  Pembaruan dan catatan terbaru dari sistem
+                  Data aktivitas terbaru yang tercatat
                 </div>
               </div>
 
               <div className="activity-actions">
-                <button
-                  type="button"
-                  className="activity-refresh-btn"
-                  onClick={() =>
-                    loadActivities({ silent: false, targetPage: page })
-                  }
-                  disabled={loading}
-                >
-                  {loading ? "Memuat ulang..." : "Muat Ulang"}
-                </button>
+                <div className="activity-count">{items.length} data</div>
               </div>
             </div>
 
             {loading ? (
               <div className="activity-loading">Memuat aktivitas...</div>
-            ) : rows.length === 0 ? (
-              <div className="activity-empty">Tidak ada log aktivitas.</div>
+            ) : items.length === 0 ? (
+              <div className="activity-empty">Belum ada aktivitas.</div>
             ) : (
               <>
                 <div className="activity-table-wrap">
@@ -162,17 +151,17 @@ export default function AdminActivity() {
                       <tr>
                         <th>Waktu</th>
                         <th>Pelaku</th>
-                        <th>Pesan</th>
+                        <th>Aktivitas</th>
                         <th>Tiket</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((a, idx) => (
-                        <tr key={a?.id_log ?? idx}>
+                      {items.map((a, idx) => (
+                        <tr key={a?.id_log ?? a?.id ?? idx}>
                           <td className="td-muted">{getTime(a)}</td>
-                          <td>{getActor(a)}</td>
+                          <td className="td-ticket">{getActor(a)}</td>
                           <td className="td-message">{getMessage(a)}</td>
-                          <td className="td-ticket">{getTicketRef(a)}</td>
+                          <td className="td-muted">{getTicketLabel(a)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -180,42 +169,31 @@ export default function AdminActivity() {
                 </div>
 
                 <div className="activity-pagination">
-                  <div className="pg-info">
-                    Halaman <strong>{page}</strong> dari{" "}
-                    <strong>{lastPage}</strong>
-                  </div>
+                  <button
+                    className="pg-btn"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1 || loading}
+                  >
+                    Prev
+                  </button>
+
+                  <div className="pg-info">Halaman {page}</div>
 
                   <button
                     className="pg-btn"
-                    onClick={onPrev}
-                    disabled={!canPrev}
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={loading || items.length < perPage}
                   >
-                    ← Sebelumnya
+                    Next
                   </button>
+                </div>
 
-                  <div className="pg-pages">
-                    {pageNumbers.map((n) => (
-                      <button
-                        key={n}
-                        className={"pg-page" + (n === page ? " active" : "")}
-                        onClick={() => setPage(n)}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    className="pg-btn"
-                    onClick={onNext}
-                    disabled={!canNext}
-                  >
-                    Berikutnya →
-                  </button>
+                <div className="pg-hint">
+                  Klik Next untuk halaman berikutnya (jika data masih ada).
                 </div>
               </>
             )}
-          </section>
+          </div>
         </div>
       </main>
     </div>

@@ -27,14 +27,9 @@ export default function UserDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const closeModal = () => setSelectedTicket(null);
 
-  // ===== NOTIF STATE (tiket selesai) =====
   const [notifOpen, setNotifOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  /**
-   * ============================
-   * STATUS NORMALIZER
-   * ============================
-   */
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
     if (v === "IN_REVIEW") return "review";
@@ -46,25 +41,12 @@ export default function UserDashboard() {
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
 
-  /**
-   * ============================
-   * FORMAT WAKTU -> WIB (Jakarta)
-   * ============================
-   */
   const formatJakarta = (raw) => {
     if (!raw) return "-";
-
     let s = String(raw).trim();
-
-    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
-      s = s.replace(" ", "T");
-    }
-
-    // jika tidak ada timezone, anggap UTC
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
     const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
     if (!hasTimezone) s += "Z";
-
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return String(raw);
 
@@ -94,26 +76,18 @@ export default function UserDashboard() {
     return formatJakarta(raw);
   };
 
-  /**
-   * ============================
-   * LOAD TICKETS
-   * ============================
-   */
   useEffect(() => {
     (async () => {
       try {
         setLoadingTickets(true);
         setErrorMsg("");
-
         const data = await fetchUserTickets();
         const list = Array.isArray(data?.data) ? data.data : data;
-
         setTickets(Array.isArray(list) ? list : []);
       } catch (err) {
         console.error(err);
         setErrorMsg(
-          err?.response?.data?.message ||
-            "Gagal mengambil data tiket dari server."
+          err?.response?.data?.message || "Gagal mengambil data tiket dari server."
         );
         setTickets([]);
       } finally {
@@ -122,35 +96,21 @@ export default function UserDashboard() {
     })();
   }, []);
 
-  /**
-   * ============================
-   * FILTERING
-   * ============================
-   */
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
     const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
     const title = String(t.title ?? t.subject ?? "").toLowerCase();
     const category = String(t.category ?? t.category_name ?? "").toLowerCase();
-
     const matchText = id.includes(q) || title.includes(q) || category.includes(q);
-
     const st = normalizeStatus(t.status);
     const matchStatus = status === "all" ? true : st === status;
-
     return matchText && matchStatus;
   });
 
-  /**
-   * ============================
-   * STATS
-   * ============================
-   */
   const stats = {
     open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
     review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
-      .length,
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
 
@@ -167,28 +127,15 @@ export default function UserDashboard() {
     return "Terbuka";
   };
 
-  /**
-   * ============================
-   * NOTIF: tiket DONE
-   * ============================
-   */
   const doneTickets = useMemo(() => {
     return tickets
       .filter((t) => normalizeStatus(t.status) === "done")
       .sort((a, b) => {
         const da = new Date(
-          a.resolved_at ??
-            a.resolution_date ??
-            a.closed_at ??
-            a.updated_at ??
-            0
+          a.resolved_at ?? a.resolution_date ?? a.closed_at ?? a.updated_at ?? 0
         ).getTime();
         const db = new Date(
-          b.resolved_at ??
-            b.resolution_date ??
-            b.closed_at ??
-            b.updated_at ??
-            0
+          b.resolved_at ?? b.resolution_date ?? b.closed_at ?? b.updated_at ?? 0
         ).getTime();
         return db - da;
       });
@@ -203,7 +150,6 @@ export default function UserDashboard() {
       resolvedAt: resolvedLabel(t),
       ticket: t,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doneTickets]);
 
   const onClickNotifItem = (item) => {
@@ -211,11 +157,27 @@ export default function UserDashboard() {
     setNotifOpen(false);
   };
 
+  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="user-page">
-      <UserSidebar active="dashboard" />
+      <UserSidebar active="dashboard" mobileOpen={sidebarOpen} onClose={closeSidebar} />
 
       <main className="user-main">
+        <div className="user-mobilebar">
+          <button className="user-hamburger" onClick={openSidebar} aria-label="Buka menu">
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <div className="user-mobilebar-title">
+            <div className="user-mobilebar-main">Dashboard</div>
+            <div className="user-mobilebar-sub">Ringkasan tiket Anda</div>
+          </div>
+        </div>
+
         <UserTopbar
           query={query}
           setQuery={setQuery}
@@ -231,7 +193,6 @@ export default function UserDashboard() {
 
         {!!errorMsg && <div className="user-error">{errorMsg}</div>}
 
-        {/* STAT CARDS */}
         <div className="user-stats">
           <div className="user-stat-card">
             <div className="user-stat-icon icon-open">📩</div>
@@ -255,34 +216,26 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        {/* NEED HELP BANNER */}
         <section className="needhelp">
           <div className="needhelp-text">
             <div className="needhelp-title">Butuh Bantuan?</div>
             <div className="needhelp-sub">
               Buat tiket bantuan baru dan tim kami akan membantu Anda
             </div>
-            <button
-              className="needhelp-btn"
-              onClick={() => navigate("/user/tickets/create")}
-            >
+            <button className="needhelp-btn" onClick={() => navigate("/user/tickets/create")}>
               + Buat Tiket Baru
             </button>
           </div>
           <div className="needhelp-icon">🎫</div>
         </section>
 
-        {/* RECENT TICKETS TABLE */}
         <section className="recent-card">
           <div className="recent-header">
             <div>
               <div className="recent-title">Tiket Terbaru</div>
               <div className="recent-sub">Permintaan bantuan terbaru Anda</div>
             </div>
-            <button
-              className="recent-viewall"
-              onClick={() => navigate("/user/tickets")}
-            >
+            <button className="recent-viewall" onClick={() => navigate("/user/tickets")}>
               Lihat Semua
             </button>
           </div>
@@ -339,10 +292,7 @@ export default function UserDashboard() {
                         </td>
                         <td>{updated}</td>
                         <td>
-                          <button
-                            className="view-btn"
-                            onClick={() => setSelectedTicket(t)}
-                          >
+                          <button className="view-btn" onClick={() => setSelectedTicket(t)}>
                             Lihat
                           </button>
                         </td>
@@ -360,10 +310,7 @@ export default function UserDashboard() {
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
             <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
-            <button
-              className="info-link-btn"
-              onClick={() => navigate("/user/faq")}
-            >
+            <button className="info-link-btn" onClick={() => navigate("/user/faq")}>
               Lihat FAQ →
             </button>
           </div>
@@ -372,10 +319,7 @@ export default function UserDashboard() {
             <div className="info-icon info-green">🗓️</div>
             <div className="info-title">Jam Layanan</div>
             <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
-            <button
-              className="info-link-btn"
-              onClick={() => navigate("/user/service-hours")}
-            >
+            <button className="info-link-btn" onClick={() => navigate("/user/service-hours")}>
               Lihat Jadwal →
             </button>
           </div>
@@ -386,17 +330,13 @@ export default function UserDashboard() {
             <div className="info-sub">
               Pahami bagaimana tiket Anda diproses langkah demi langkah
             </div>
-            <button
-              className="info-link-btn"
-              onClick={() => navigate("/user/how-it-works")}
-            >
+            <button className="info-link-btn" onClick={() => navigate("/user/how-it-works")}>
               Lihat Panduan →
             </button>
           </div>
         </section>
       </main>
 
-      {/* ===== MODAL VIEW TICKET + CHAT ===== */}
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -426,9 +366,7 @@ export default function UserDashboard() {
               <div className="modal-row">
                 <span>Prioritas</span>
                 <strong>
-                  <span
-                    className={priorityClass(selectedTicket.priority ?? "LOW")}
-                  >
+                  <span className={priorityClass(selectedTicket.priority ?? "LOW")}>
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
                 </strong>
