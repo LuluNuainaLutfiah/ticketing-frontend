@@ -20,8 +20,7 @@ export default function AdminDashboard() {
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
@@ -31,7 +30,6 @@ export default function AdminDashboard() {
     return "open";
   };
 
-  // Helper ticket
   const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
   const getTitle = (t) => t.title ?? t.subject ?? "-";
 
@@ -42,15 +40,10 @@ export default function AdminDashboard() {
 
   const formatJakarta = (raw) => {
     if (!raw) return "-";
-
     let s = String(raw).trim();
 
-    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
-      s = s.replace(" ", "T");
-    }
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
 
-    // kalau tidak ada timezone (Z / +07:00), anggap UTC
     const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
     if (!hasTimezone) s += "Z";
 
@@ -68,15 +61,11 @@ export default function AdminDashboard() {
     }).format(d);
   };
 
-  const createdAtLabel = (t) => {
-    const raw = t.created_at ?? t.createdAt ?? t.date;
-    return formatJakarta(raw);
-  };
+  const createdAtLabel = (t) =>
+    formatJakarta(t.created_at ?? t.createdAt ?? t.date);
 
-  const getCompletedAt = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
-    return formatJakarta(raw);
-  };
+  const getCompletedAt = (t) =>
+    formatJakarta(t.resolved_at ?? t.resolution_date ?? t.closed_at);
 
   const getMessage = (a) =>
     a?.details || a?.action || a?.activity || a?.message || "-";
@@ -96,7 +85,6 @@ export default function AdminDashboard() {
     try {
       setLoadingTickets(true);
       setErrorMsg("");
-
       const data = await fetchAdminTickets();
       const list = Array.isArray(data?.data) ? data.data : data;
       setTickets(Array.isArray(list) ? list : []);
@@ -124,11 +112,9 @@ export default function AdminDashboard() {
     (async () => {
       try {
         setLoadingActivities(true);
-
         const res = await fetchAdminActivities({ page: 1, perPage: 10 });
-        const paginator = res?.data; 
+        const paginator = res?.data;
         const list = Array.isArray(paginator?.data) ? paginator.data : [];
-
         setActivities(list.slice(0, 6));
       } catch (err) {
         console.error(err);
@@ -141,11 +127,9 @@ export default function AdminDashboard() {
 
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
-
     const id = String(getId(t)).toLowerCase();
     const title = String(getTitle(t)).toLowerCase();
     const completedAt = String(getCompletedAt(t)).toLowerCase();
-
     return id.includes(q) || title.includes(q) || completedAt.includes(q);
   });
 
@@ -161,14 +145,14 @@ export default function AdminDashboard() {
     })
     .slice(0, 8);
 
-  const needsActionCount = tickets.filter((t) => {
-    const st = normalizeStatus(t.status);
-    return st === "open" || st === "review";
-  }).length;
+  const needsActionCount = needsActionTickets.length;
 
   const stats = {
     total: tickets.length,
-    pending: needsActionCount, 
+    pending: tickets.filter((t) => {
+      const st = normalizeStatus(t.status);
+      return st === "open" || st === "review";
+    }).length,
     review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
     progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
       .length,
@@ -177,29 +161,30 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-page">
-      <AdminSidebar active="overview" />
+      <AdminSidebar
+        active="overview"
+        mobileOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div className="admin-main">
         <AdminNavbar
           query={query}
           setQuery={setQuery}
           user={user}
-          notifOpen={notifOpen}
-          setNotifOpen={setNotifOpen}
-          notifCount={needsActionCount}
           notifItems={needsActionTickets.map((t) => ({
             id: getId(t),
             title: getTitle(t),
             priority: getPriority(t),
-            createdAt: createdAtLabel(t),
+            createdAt: t.created_at ?? t.createdAt,
             status: normalizeStatus(t.status),
           }))}
+          onToggleSidebar={() => setSidebarOpen(true)}
         />
 
         {!!errorMsg && <div className="auth-error">{errorMsg}</div>}
 
-        {/* STATS ROW */}
-        <div className="admin-stats admin-stats-4">
+        <div className="admin-stats">
           <div className="stat-card">
             <div className="stat-icon icon-total">📌</div>
             <div className="stat-title">Total Tiket</div>
@@ -229,16 +214,12 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* GRID: RECENT TICKETS + ACTIVITY */}
         <div className="admin-grid">
-          {/* LEFT TABLE */}
-          <div className="admin-table-card">
-            <div className="admin-table-header">
+          <div className="admin-card admin-table-card">
+            <div className="admin-card-head">
               <div>
-                <div className="admin-table-title">Tiket Terbaru</div>
-                <div className="admin-table-sub">
-                  Permintaan bantuan terbaru
-                </div>
+                <div className="admin-card-title">Tiket Terbaru</div>
+                <div className="admin-card-sub">Permintaan bantuan terbaru</div>
               </div>
             </div>
 
@@ -246,64 +227,69 @@ export default function AdminDashboard() {
               <div className="loading-text">Memuat data tiket...</div>
             ) : (
               <div className="table-scroll">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Judul</th>
-                      <th>Prioritas</th>
-                      <th>Status</th>
-                      <th>Tanggal Selesai</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((t, idx) => {
-                      const st = normalizeStatus(t.status);
-                      const priority = getPriority(t);
-                      const id = getId(t);
-                      const completedAt = getCompletedAt(t);
-
-                      return (
-                        <tr key={id || idx}>
-                          <td>{id}</td>
-                          <td>{getTitle(t)}</td>
-                          <td>
-                            <span
-                              className={`priority ${priority.toLowerCase()}`}
-                            >
-                              {priority}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge ${st}`}>
-                              {st === "open" && "Terbuka"}
-                              {st === "review" && "Ditinjau"}
-                              {st === "progress" && "Diproses"}
-                              {st === "done" && "Selesai"}
-                            </span>
-                          </td>
-                          <td>{completedAt}</td>
-                        </tr>
-                      );
-                    })}
-
-                    {filtered.length === 0 && (
+                <div className="table-x">
+                  <table className="admin-table">
+                    <thead>
                       <tr>
-                        <td colSpan="5" className="empty-row">
-                          Tidak ada tiket ditemukan.
-                        </td>
+                        <th>ID</th>
+                        <th>Judul</th>
+                        <th>Prioritas</th>
+                        <th>Status</th>
+                        <th>Tanggal Selesai</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filtered.map((t, idx) => {
+                        const st = normalizeStatus(t.status);
+                        const priority = getPriority(t);
+                        const id = getId(t);
+                        const completedAt = getCompletedAt(t);
+
+                        return (
+                          <tr key={id || idx}>
+                            <td>{id}</td>
+                            <td className="td-title">{getTitle(t)}</td>
+                            <td>
+                              <span
+                                className={`priority ${priority.toLowerCase()}`}
+                              >
+                                {priority}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge ${st}`}>
+                                {st === "open" && "Terbuka"}
+                                {st === "review" && "Ditinjau"}
+                                {st === "progress" && "Diproses"}
+                                {st === "done" && "Selesai"}
+                              </span>
+                            </td>
+                            <td>{completedAt}</td>
+                          </tr>
+                        );
+                      })}
+
+                      {filtered.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="empty-row">
+                            Tidak ada tiket ditemukan.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
 
-          {/* RIGHT ACTIVITY */}
-          <div className="admin-activity-card">
-            <div className="admin-activity-title">Aktivitas Terbaru</div>
-            <div className="admin-activity-sub">Pembaruan sistem terbaru</div>
+          <div className="admin-card admin-activity-card">
+            <div className="admin-card-head">
+              <div>
+                <div className="admin-card-title">Aktivitas Terbaru</div>
+                <div className="admin-card-sub">Pembaruan sistem terbaru</div>
+              </div>
+            </div>
 
             {loadingActivities ? (
               <div className="loading-text">Memuat aktivitas...</div>
@@ -318,12 +304,11 @@ export default function AdminDashboard() {
                     return (
                       <li key={a?.id_log ?? i} className="activity-item">
                         <span className="activity-dot" />
-                        <div>
+                        <div className="activity-body">
                           <div className="activity-text">{message}</div>
                           <div className="activity-time">
                             oleh {actor} • {time}
                           </div>
-
                           {a?.ticket && (
                             <div className="activity-time">
                               Tiket:{" "}
@@ -338,7 +323,7 @@ export default function AdminDashboard() {
                   })}
 
                   {activities.length === 0 && (
-                    <div className="empty-activity">Belum ada aktivitas.</div>
+                    <li className="empty-activity">Belum ada aktivitas.</li>
                   )}
                 </ul>
               </div>

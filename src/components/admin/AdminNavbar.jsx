@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) {
+export default function AdminNavbar({
+  query,
+  setQuery,
+  user,
+  notifItems = [],
+  onToggleSidebar,
+}) {
   const navigate = useNavigate();
 
   const [openNotif, setOpenNotif] = useState(false);
@@ -43,6 +49,15 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
       </div>
 
       <div className="admin-navbar-right">
+        <button
+          type="button"
+          className="admin-hamburger"
+          onClick={() => onToggleSidebar?.()}
+          aria-label="Buka menu"
+        >
+          ☰
+        </button>
+
         <div className="admin-search-wrap">
           <input
             className="admin-search-input"
@@ -52,7 +67,6 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
           />
         </div>
 
-        {/* NOTIFIKASI */}
         <div className="admin-notif" ref={notifRef}>
           <button
             type="button"
@@ -77,9 +91,7 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
 
               <div className="admin-notif-panel-list">
                 {notifCount === 0 ? (
-                  <div className="admin-notif-empty">
-                    Tidak ada notifikasi 🎉
-                  </div>
+                  <div className="admin-notif-empty">Tidak ada notifikasi 🎉</div>
                 ) : (
                   notifItems.slice(0, 8).map((n) => (
                     <button
@@ -103,7 +115,7 @@ export default function AdminNavbar({ query, setQuery, user, notifItems = [] }) 
                       </div>
                       <div className="admin-notif-msg">{n.title}</div>
                       <div className="admin-notif-time">
-                        {formatTime(n.created_at)}
+                        {formatTime(n.createdAt || n.created_at)}
                       </div>
                     </button>
                   ))
