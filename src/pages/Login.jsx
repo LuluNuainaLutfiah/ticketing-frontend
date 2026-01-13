@@ -19,6 +19,12 @@ export default function LoginPage() {
     const el = pageRef.current;
     if (!el) return;
 
+    const canHover =
+      window.matchMedia &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    if (!canHover) return;
+
     let raf = 0;
 
     const onMove = (e) => {
@@ -33,8 +39,8 @@ export default function LoginPage() {
     };
 
     const onLeave = () => {
-      el.style.setProperty("--mx", `50%`);
-      el.style.setProperty("--my", `35%`);
+      el.style.setProperty("--mx", "50%");
+      el.style.setProperty("--my", "35%");
     };
 
     el.addEventListener("mousemove", onMove);
@@ -76,25 +82,15 @@ export default function LoginPage() {
 
       if (!user) {
         setErrorMsg("Login berhasil, tetapi data pengguna tidak ditemukan.");
-        setLoading(false);
         return;
       }
 
-      if (token) {
-        localStorage.setItem("token", token);
-      }
-
+      if (token) localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
       const role = user.role === "admin" ? "admin" : "user";
-
-      if (role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/user");
-      }
+      navigate(role === "admin" ? "/admin" : "/user");
     } catch (err) {
-      console.error(err);
       setErrorMsg(
         err.response?.data?.message ||
           "Login gagal. Silakan periksa email dan kata sandi Anda."
@@ -106,14 +102,16 @@ export default function LoginPage() {
 
   return (
     <div ref={pageRef} className="auth-page">
-      <div className="auth-bg">
-        <div
+      <div className="auth-shell">
+        <button
+          type="button"
           className="auth-back-btn"
           onClick={() => navigate("/")}
+          aria-label="Kembali ke Beranda"
           title="Kembali ke Beranda"
         >
           ←
-        </div>
+        </button>
 
         <div className="auth-card">
           <div className="auth-logo-wrapper">
@@ -136,6 +134,7 @@ export default function LoginPage() {
                 className="auth-input"
                 value={form.email}
                 onChange={handleChange}
+                autoComplete="email"
                 required
               />
             </div>
@@ -151,6 +150,7 @@ export default function LoginPage() {
                 className="auth-input"
                 value={form.password}
                 onChange={handleChange}
+                autoComplete="current-password"
                 required
               />
             </div>
