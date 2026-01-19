@@ -115,6 +115,12 @@ export default function UserHowItWorks() {
             </div>
           </div>
         </section>
+
+        <div className="uhiw-back">
+          <button onClick={() => navigate("/user")}>
+            ← Kembali ke Menu
+          </button>
+        </div>
       </main>
     </div>
   );

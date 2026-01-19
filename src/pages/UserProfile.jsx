@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-profile.css";
 import { fetchUserTickets } from "../services/tickets";
+import { uploadAvatar } from "../services/profile";
 
 export default function UserProfile() {
-  const user = useMemo(() => {
+  const initialUser = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
     } catch {
@@ -12,7 +13,18 @@ export default function UserProfile() {
     }
   }, []);
 
-  const fullName = user.name || user.full_name || "";
+  const [userData, setUserData] = useState(initialUser);
+
+  const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+  const resolveAvatar = (avatar) => {
+    if (!avatar) return null;
+    const v = String(avatar);
+    if (v.startsWith("http")) return v;
+    return `${API_BASE}/storage/${v}`;
+  };
+
+  const fullName = userData.name || userData.full_name || "";
   const parts = fullName.split(" ").filter(Boolean);
   const firstName = parts[0] || "";
   const lastName = parts.slice(1).join(" ");
@@ -23,19 +35,22 @@ export default function UserProfile() {
       .slice(0, 2)
       .join("") || "US";
 
-  const [avatarPreview, setAvatarPreview] = useState(user.avatar || null);
+  const [avatarPreview, setAvatarPreview] = useState(
+    resolveAvatar(userData.avatar || userData.avatar_url)
+  );
+
   const fileInputRef = useRef(null);
 
-  const role = String(user.role || "").toLowerCase();
-  const userType = String(user.user_type || "").toLowerCase();
+  const role = String(userData.role || "").toLowerCase();
+  const userType = String(userData.user_type || "").toLowerCase();
 
   const isStudent = userType === "mahasiswa";
   const idLabel = isStudent ? "NPM (Mahasiswa)" : "NIK (Dosen)";
-  const idValue = isStudent ? user.npm || "-" : user.nik || "-";
+  const idValue = isStudent ? userData.npm || "-" : userData.nik || "-";
   const userTypeLabel = userType ? (isStudent ? "Mahasiswa" : "Dosen") : "-";
 
-  const email = user.email || "-";
-  const phone = user.phone || "+62";
+  const email = userData.email || "-";
+  const phone = userData.phone || "+62";
 
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState("");
@@ -80,7 +95,6 @@ export default function UserProfile() {
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         setResolvedRate(pct);
       } catch (err) {
-        console.error(err);
         setStatsError(err?.response?.data?.message || "Gagal mengambil statistik tiket.");
         setTotalTickets(0);
         setActiveTickets(0);
@@ -91,16 +105,40 @@ export default function UserProfile() {
     })();
   }, []);
 
+  useEffect(() => {
+    setAvatarPreview(resolveAvatar(userData.avatar || userData.avatar_url));
+  }, [userData]);
+
   const handleChangePhotoClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(reader.result);
-    reader.readAsDataURL(file);
+
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+
+    try {
+      const res = await uploadAvatar(file);
+
+      const updatedUser =
+        res?.data?.user ||
+        {
+          ...userData,
+          avatar: res?.data?.avatar || res?.data?.avatar_url || userData.avatar,
+        };
+
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUserData(updatedUser);
+    } catch (err) {
+      setStatsError(err?.response?.data?.message || "Upload foto gagal. Cek endpoint/izin akses.");
+      setAvatarPreview(resolveAvatar(userData.avatar || userData.avatar_url));
+    } finally {
+      e.target.value = "";
+      URL.revokeObjectURL(localPreview);
+    }
   };
 
   const openSidebar = () => setSidebarOpen(true);

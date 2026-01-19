@@ -55,7 +55,9 @@ export default function UserCreateTicket() {
       formData.append("priority", priority);
       formData.append("description", cleanDesc);
 
-      if (attachment) formData.append("attachment", attachment);
+      if (attachment) {
+        formData.append("files[]", attachment);
+      }
 
       await createUserTicket(formData);
 
@@ -85,11 +87,19 @@ export default function UserCreateTicket() {
 
   return (
     <div className="user-page">
-      <UserSidebar active="create-ticket" mobileOpen={sidebarOpen} onClose={closeSidebar} />
+      <UserSidebar
+        active="create-ticket"
+        mobileOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
 
       <main className="user-main uct-main">
         <div className="uct-mobilebar">
-          <button className="uct-hamburger" onClick={openSidebar} aria-label="Buka menu">
+          <button
+            className="uct-hamburger"
+            onClick={openSidebar}
+            aria-label="Buka menu"
+          >
             <span />
             <span />
             <span />

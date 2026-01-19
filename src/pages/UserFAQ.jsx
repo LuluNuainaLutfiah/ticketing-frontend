@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-faq.css";
 
 export default function UserFAQ() {
   const [q, setQ] = useState("");
+  const navigate = useNavigate();
 
   const faqs = useMemo(
     () => [
@@ -62,6 +64,12 @@ export default function UserFAQ() {
               </details>
             ))
           )}
+        </div>
+
+        <div className="faq-back">
+          <button onClick={() => navigate("/user")}>
+            ← Kembali ke Menu
+          </button>
         </div>
       </main>
     </div>

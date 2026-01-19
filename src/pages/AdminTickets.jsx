@@ -3,6 +3,7 @@ import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
 import {
   fetchAdminTickets,
+  fetchAdminTicketDetail,
   adminUpdateTicketStatus,
   sendTicketMessage,
 } from "../services/tickets";
@@ -17,6 +18,8 @@ export default function AdminTickets() {
   const [updatingId, setUpdatingId] = useState(null);
 
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const closeModal = () => setSelectedTicket(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,6 +146,83 @@ export default function AdminTickets() {
     return "Terbuka";
   };
 
+  // ========= Lampiran helpers =========
+  const getAttachments = (t) => {
+    if (!t) return [];
+    if (Array.isArray(t.attachments) && t.attachments.length) return t.attachments;
+    if (Array.isArray(t.files) && t.files.length) return t.files;
+    if (t.attachment) return [t.attachment];
+    if (t.attachment_url) return [t.attachment_url];
+    if (t.attachment_path) return [t.attachment_path];
+    return [];
+  };
+
+  const normalizeAttachment = (a) => {
+    if (!a) return null;
+
+    if (typeof a === "string") {
+      return { url: a, name: a.split("/").pop() || "Lampiran" };
+    }
+
+    const url =
+      a.url ||
+      a.file_url ||
+      a.attachment_url ||
+      a.path ||
+      a.file_path ||
+      a.storage_path;
+
+    const name =
+      a.name ||
+      a.original_name ||
+      a.filename ||
+      a.file_name ||
+      (url ? url.split("/").pop() : "Lampiran");
+
+    return { url: url || "", name };
+  };
+
+  const buildStorageUrlIfNeeded = (urlOrPath) => {
+    if (!urlOrPath) return "";
+    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
+
+    const base = import.meta.env.VITE_API_BASE_URL || "";
+    const root = base.replace(/\/api\/?$/, "");
+
+    if (urlOrPath.startsWith("/")) return `${root}${urlOrPath}`;
+    if (urlOrPath.startsWith("storage/")) return `${root}/${urlOrPath}`;
+    return `${root}/storage/${urlOrPath}`;
+  };
+  // ===================================
+
+  // ✅ FIX UTAMA ADA DI SINI: res dari service sudah "data", jadi pakai res?.data ?? res
+  const openTicketModal = async (ticket) => {
+    setSelectedTicket(ticket);
+
+    const idTicket = getRealId(ticket);
+    if (!idTicket) return;
+
+    try {
+      setDetailLoading(true);
+      const res = await fetchAdminTicketDetail(idTicket);
+
+      // fetchAdminTicketDetail return res.data dari axios
+      // biasanya bentuknya { message, data: {...ticket...} }
+      const detail = res?.data ?? res;
+
+      const merged = { ...ticket, ...detail };
+
+      setSelectedTicket(merged);
+      setTickets((prev) =>
+        prev.map((t) => (getRealId(t) === idTicket ? { ...t, ...detail } : t))
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const toggleChat = (ticket) => {
     setSelectedTicket((prev) => {
       const prevId = getRealId(prev);
@@ -227,12 +307,18 @@ export default function AdminTickets() {
     const idTicket = getRealId(t);
     const isLoading = updatingId && idTicket && updatingId === idTicket;
 
+    // supaya klik tombol tidak ikut membuka modal row
+    const stop = (e) => e.stopPropagation();
+
     if (st === "open") {
       return (
         <button
           className="action-btn blue"
           disabled={isLoading}
-          onClick={() => handleSetInReview(t)}
+          onClick={(e) => {
+            stop(e);
+            handleSetInReview(t);
+          }}
         >
           {isLoading ? "Menyimpan..." : "Tinjau"}
         </button>
@@ -244,7 +330,10 @@ export default function AdminTickets() {
         <button
           className="action-btn blue"
           disabled={isLoading}
-          onClick={() => handleStartProgress(t)}
+          onClick={(e) => {
+            stop(e);
+            handleStartProgress(t);
+          }}
         >
           {isLoading ? "Menyimpan..." : "Mulai Proses"}
         </button>
@@ -257,7 +346,10 @@ export default function AdminTickets() {
           <button
             className="action-btn purple"
             disabled={isLoading}
-            onClick={() => toggleChat(t)}
+            onClick={(e) => {
+              stop(e);
+              toggleChat(t);
+            }}
           >
             Chat
           </button>
@@ -265,7 +357,10 @@ export default function AdminTickets() {
           <button
             className="action-btn green"
             disabled={isLoading}
-            onClick={() => handleResolve(t)}
+            onClick={(e) => {
+              stop(e);
+              handleResolve(t);
+            }}
           >
             {isLoading ? "Menyimpan..." : "Tandai Selesai"}
           </button>
@@ -278,7 +373,10 @@ export default function AdminTickets() {
         <button
           className="action-btn gray"
           disabled={isLoading}
-          onClick={() => handleReopen(t)}
+          onClick={(e) => {
+            stop(e);
+            handleReopen(t);
+          }}
         >
           {isLoading ? "Menyimpan..." : "Buka Kembali"}
         </button>
@@ -287,6 +385,10 @@ export default function AdminTickets() {
 
     return "-";
   };
+
+  const attachments = getAttachments(selectedTicket)
+    .map(normalizeAttachment)
+    .filter(Boolean);
 
   return (
     <div className="admin-page tickets-layout">
@@ -301,9 +403,7 @@ export default function AdminTickets() {
           <div className="tickets-header">
             <div>
               <h1 className="tickets-title">Semua Tiket</h1>
-              <p className="tickets-subtitle">
-                Lihat dan kelola seluruh tiket bantuan
-              </p>
+              <p className="tickets-subtitle">Lihat dan kelola seluruh tiket bantuan</p>
             </div>
 
             <div className="tickets-header-right">
@@ -340,8 +440,7 @@ export default function AdminTickets() {
               <div className="tickets-filters">
                 <button
                   className={
-                    "filter-chip" +
-                    (statusFilter === "open" ? " active open" : "")
+                    "filter-chip" + (statusFilter === "open" ? " active open" : "")
                   }
                   onClick={() => setStatusFilter("open")}
                 >
@@ -363,9 +462,7 @@ export default function AdminTickets() {
                 <button
                   className={
                     "filter-chip" +
-                    (statusFilter === "in_progress"
-                      ? " active in-progress"
-                      : "")
+                    (statusFilter === "in_progress" ? " active in-progress" : "")
                   }
                   onClick={() => setStatusFilter("in_progress")}
                 >
@@ -375,8 +472,7 @@ export default function AdminTickets() {
 
                 <button
                   className={
-                    "filter-chip" +
-                    (statusFilter === "closed" ? " active closed" : "")
+                    "filter-chip" + (statusFilter === "closed" ? " active closed" : "")
                   }
                   onClick={() => setStatusFilter("closed")}
                 >
@@ -385,9 +481,7 @@ export default function AdminTickets() {
                 </button>
 
                 <button
-                  className={
-                    "filter-chip" + (statusFilter === "all" ? " active" : "")
-                  }
+                  className={"filter-chip" + (statusFilter === "all" ? " active" : "")}
                   onClick={() => setStatusFilter("all")}
                 >
                   Semua ({tickets.length})
@@ -428,19 +522,19 @@ export default function AdminTickets() {
                         const created = getCreated(t);
 
                         return (
-                          <tr key={id || idx}>
+                          <tr
+                            key={id || idx}
+                            onClick={() => openTicketModal(t)}
+                            style={{ cursor: "pointer" }}
+                          >
                             <td>{id}</td>
                             <td className="ticket-title-cell">{title}</td>
                             <td>{cat}</td>
                             <td>
-                              <span className={priorityClass(priority)}>
-                                {priority}
-                              </span>
+                              <span className={priorityClass(priority)}>{priority}</span>
                             </td>
                             <td>
-                              <span className={statusClass(st)}>
-                                {statusLabel(st)}
-                              </span>
+                              <span className={statusClass(st)}>{statusLabel(st)}</span>
                             </td>
                             <td>{created}</td>
                             <td>{renderActionButtons(t)}</td>
@@ -489,11 +583,7 @@ export default function AdminTickets() {
               <div className="modal-row">
                 <span>Status</span>
                 <strong>
-                  <span
-                    className={statusClass(
-                      normalizeStatus(selectedTicket.status)
-                    )}
-                  >
+                  <span className={statusClass(normalizeStatus(selectedTicket.status))}>
                     {statusLabel(normalizeStatus(selectedTicket.status))}
                   </span>
                 </strong>
@@ -512,6 +602,29 @@ export default function AdminTickets() {
               <div className="modal-desc">
                 <div className="modal-desc-title">Deskripsi</div>
                 <p>{selectedTicket.description ?? "-"}</p>
+              </div>
+
+              <div className="modal-desc">
+                <div className="modal-desc-title">Lampiran</div>
+
+                {detailLoading ? (
+                  <p>Memuat lampiran...</p>
+                ) : attachments.length === 0 ? (
+                  <p>-</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {attachments.map((att, i) => {
+                      const href = buildStorageUrlIfNeeded(att.url);
+                      return (
+                        <li key={i}>
+                          <a href={href} target="_blank" rel="noreferrer">
+                            {att.name}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
 
               <div className="modal-chat-wrapper">

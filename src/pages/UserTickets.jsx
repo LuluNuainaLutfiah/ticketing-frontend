@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-tickets.css";
 import TicketChatPanel from "./TicketChatPanel";
-import { fetchUserTickets } from "../services/tickets";
+import { fetchUserTickets, fetchUserTicketDetail } from "../services/tickets";
 
 export default function UserTickets() {
   const navigate = useNavigate();
@@ -24,6 +24,8 @@ export default function UserTickets() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   const closeModal = () => setSelectedTicket(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,6 +67,59 @@ export default function UserTickets() {
     const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
     return formatJakarta(raw);
   };
+
+  // =========================
+  // Lampiran helpers (mirip admin)
+  // =========================
+  const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
+
+  const getAttachments = (t) => {
+    if (!t) return [];
+    if (Array.isArray(t.attachments) && t.attachments.length) return t.attachments;
+    if (Array.isArray(t.files) && t.files.length) return t.files;
+    if (t.attachment) return [t.attachment];
+    if (t.attachment_url) return [t.attachment_url];
+    if (t.attachment_path) return [t.attachment_path];
+    return [];
+  };
+
+  const normalizeAttachment = (a) => {
+    if (!a) return null;
+
+    if (typeof a === "string") {
+      return { url: a, name: a.split("/").pop() || "Lampiran" };
+    }
+
+    const url =
+      a.url ||
+      a.file_url ||
+      a.attachment_url ||
+      a.path ||
+      a.file_path ||
+      a.storage_path;
+
+    const name =
+      a.name ||
+      a.original_name ||
+      a.filename ||
+      a.file_name ||
+      (url ? url.split("/").pop() : "Lampiran");
+
+    return { url: url || "", name };
+  };
+
+  const buildStorageUrlIfNeeded = (urlOrPath) => {
+    if (!urlOrPath) return "";
+    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
+
+    const base = import.meta.env.VITE_API_BASE_URL || "";
+    const root = base.replace(/\/api\/?$/, "");
+
+    if (urlOrPath.startsWith("/")) return `${root}${urlOrPath}`;
+    if (urlOrPath.startsWith("storage/")) return `${root}/${urlOrPath}`;
+    return `${root}/storage/${urlOrPath}`;
+  };
+  // =========================
 
   useEffect(() => {
     (async () => {
@@ -115,6 +170,36 @@ export default function UserTickets() {
 
   const openSidebar = () => setSidebarOpen(true);
   const closeSidebar = () => setSidebarOpen(false);
+
+  // =========================
+  // Ambil detail tiket user dulu, biar lampiran kebawa
+  // =========================
+  const openTicketModal = async (ticket) => {
+    setSelectedTicket(ticket);
+
+    const idTicket = getRealId(ticket);
+    if (!idTicket) return;
+
+    try {
+      setDetailLoading(true);
+      const res = await fetchUserTicketDetail(idTicket);
+
+      // res dari service kamu: res.data, biasanya bentuknya { message, data: {...} }
+      const detail = res?.data ?? res;
+
+      const merged = { ...ticket, ...detail };
+      setSelectedTicket(merged);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+  // =========================
+
+  const attachments = getAttachments(selectedTicket)
+    .map(normalizeAttachment)
+    .filter(Boolean);
 
   return (
     <div className="user-page">
@@ -226,7 +311,7 @@ export default function UserTickets() {
                         <td className="ut-nowrap">{resolvedLabel(t)}</td>
                         <td className="ut-nowrap">{createdLabel(t)}</td>
                         <td>
-                          <button className="ut-view-btn" onClick={() => setSelectedTicket(t)}>
+                          <button className="ut-view-btn" onClick={() => openTicketModal(t)}>
                             Lihat
                           </button>
                         </td>
@@ -297,6 +382,29 @@ export default function UserTickets() {
               <div className="modal-desc">
                 <div className="modal-desc-title">Deskripsi</div>
                 <p>{selectedTicket.description ?? "-"}</p>
+              </div>
+
+              <div className="modal-desc">
+                <div className="modal-desc-title">Lampiran</div>
+
+                {detailLoading ? (
+                  <p>Memuat lampiran...</p>
+                ) : attachments.length === 0 ? (
+                  <p>-</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {attachments.map((att, i) => {
+                      const href = buildStorageUrlIfNeeded(att.url);
+                      return (
+                        <li key={i}>
+                          <a href={href} target="_blank" rel="noreferrer">
+                            {att.name}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
 
               <div className="modal-chat-wrapper">

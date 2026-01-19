@@ -1,7 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-service-hours.css";
 
 export default function UserServiceHours() {
+  const navigate = useNavigate();
+
   return (
     <div className="user-page">
       <UserSidebar active="" />
@@ -30,6 +33,12 @@ export default function UserServiceHours() {
               dengan deskripsi yang lengkap agar dapat diproses lebih cepat.
             </div>
           </div>
+        </div>
+
+        <div className="ush-back">
+          <button onClick={() => navigate("/user")}>
+            ← Kembali ke Menu
+          </button>
         </div>
       </main>
     </div>

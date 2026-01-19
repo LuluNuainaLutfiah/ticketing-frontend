@@ -48,6 +48,32 @@
   border-radius: 12px;
 }
 
+.ush-back {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  padding-bottom: 16px;
+}
+
+.ush-back button {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.ush-back button:hover {
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 900px){
   .sh-main{ padding: 18px 16px; }
 }
