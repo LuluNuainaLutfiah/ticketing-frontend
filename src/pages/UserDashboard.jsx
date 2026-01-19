@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import UserTopbar from "../components/user/UserTopbar";
 import "../styles/user-dashboard.css";
-import { fetchUserTickets } from "../services/tickets";
+import { fetchUserTickets, fetchUserTicketDetail } from "../services/tickets";
 import TicketChatPanel from "./TicketChatPanel";
 
 export default function UserDashboard() {
@@ -25,10 +25,15 @@ export default function UserDashboard() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const closeModal = () => setSelectedTicket(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(5);
+
+  const closeModal = () => setSelectedTicket(null);
 
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
@@ -38,8 +43,8 @@ export default function UserDashboard() {
     return "open";
   };
 
-  const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
-  const getTitle = (t) => t.title ?? t.subject ?? "-";
+  const getId = (t) => t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
+  const getTitle = (t) => t?.title ?? t?.subject ?? "-";
 
   const formatJakarta = (raw) => {
     if (!raw) return "-";
@@ -62,55 +67,140 @@ export default function UserDashboard() {
   };
 
   const createdLabel = (t) => {
-    const raw = t.created_at ?? t.createdAt ?? t.date;
+    const raw = t?.created_at ?? t?.createdAt ?? t?.date;
     return formatJakarta(raw);
   };
 
   const resolvedLabel = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date ?? t.closed_at;
+    const raw = t?.resolved_at ?? t?.resolution_date ?? t?.closed_at;
     return formatJakarta(raw);
   };
 
   const updatedLabel = (t) => {
-    const raw = t.updated_at ?? t.updatedAt ?? t.last_update;
+    const raw = t?.updated_at ?? t?.updatedAt ?? t?.last_update;
     return formatJakarta(raw);
   };
 
+  const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
+
+  const getAttachments = (t) => {
+    if (!t) return [];
+    const allFiles = Array.isArray(t.attachments)
+      ? t.attachments
+      : Array.isArray(t.files)
+      ? t.files
+      : [];
+    return allFiles.filter((file) => !file.id_message);
+  };
+
+  const normalizeAttachment = (a) => {
+    if (!a) return null;
+
+    if (typeof a === "string") {
+      return { url: a, name: a.split("/").pop() || "Lampiran" };
+    }
+
+    const url =
+      a.url ||
+      a.file_url ||
+      a.attachment_url ||
+      a.path ||
+      a.file_path ||
+      a.storage_path;
+
+    const name =
+      a.name ||
+      a.original_name ||
+      a.filename ||
+      a.file_name ||
+      (url ? url.split("/").pop() : "Lampiran");
+
+    return { url: url || "", name };
+  };
+
+  const buildStorageUrlIfNeeded = (urlOrPath) => {
+    if (!urlOrPath) return "";
+    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
+
+    const base =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000/api";
+
+    const root = base.replace(/\/api\/?$/, "");
+    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
+
+    return cleanPath.startsWith("storage/")
+      ? `${root}/${cleanPath}`
+      : `${root}/storage/${cleanPath}`;
+  };
+
+  const parsePaginator = (res) => {
+    const payload = res || {};
+    const pager = payload?.data || {};
+    const list = Array.isArray(pager?.data) ? pager.data : [];
+    const cp = Number(pager?.current_page ?? 1);
+    const lp = Number(pager?.last_page ?? 5);
+    return { list, current_page: cp, last_page: lp };
+  };
+
+  const loadTickets = async (page = 1) => {
+    try {
+      setLoadingTickets(true);
+      setErrorMsg("");
+      const res = await fetchUserTickets({
+        page,
+        status:
+          status === "all"
+            ? undefined
+            : status === "open"
+            ? "OPEN"
+            : status === "review"
+            ? "IN_REVIEW"
+            : status === "progress"
+            ? "IN_PROGRESS"
+            : "RESOLVED",
+      });
+
+      const pager = parsePaginator(res);
+      setTickets(pager.list);
+      setCurrentPage(pager.current_page);
+      setLastPage(pager.last_page);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal mengambil data tiket dari server."
+      );
+      setTickets([]);
+      setCurrentPage(1);
+      setLastPage(5);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        setLoadingTickets(true);
-        setErrorMsg("");
-        const data = await fetchUserTickets();
-        const list = Array.isArray(data?.data) ? data.data : data;
-        setTickets(Array.isArray(list) ? list : []);
-      } catch (err) {
-        console.error(err);
-        setErrorMsg(
-          err?.response?.data?.message || "Gagal mengambil data tiket dari server."
-        );
-        setTickets([]);
-      } finally {
-        setLoadingTickets(false);
-      }
-    })();
+    loadTickets(1);
   }, []);
+
+  useEffect(() => {
+    loadTickets(1);
+  }, [status]);
 
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
-    const id = String(t.code_ticket ?? t.id_ticket ?? "").toLowerCase();
-    const title = String(t.title ?? t.subject ?? "").toLowerCase();
-    const category = String(t.category ?? t.category_name ?? "").toLowerCase();
+    const id = String(t?.code_ticket ?? t?.id_ticket ?? "").toLowerCase();
+    const title = String(t?.title ?? t?.subject ?? "").toLowerCase();
+    const category = String(t?.category ?? t?.category_name ?? "").toLowerCase();
     const matchText = id.includes(q) || title.includes(q) || category.includes(q);
-    const st = normalizeStatus(t.status);
-    const matchStatus = status === "all" ? true : st === status;
-    return matchText && matchStatus;
+    return matchText;
   });
 
   const stats = {
     open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
     review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
+      .length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
 
@@ -132,10 +222,18 @@ export default function UserDashboard() {
       .filter((t) => normalizeStatus(t.status) === "done")
       .sort((a, b) => {
         const da = new Date(
-          a.resolved_at ?? a.resolution_date ?? a.closed_at ?? a.updated_at ?? 0
+          a?.resolved_at ??
+            a?.resolution_date ??
+            a?.closed_at ??
+            a?.updated_at ??
+            0
         ).getTime();
         const db = new Date(
-          b.resolved_at ?? b.resolution_date ?? b.closed_at ?? b.updated_at ?? 0
+          b?.resolved_at ??
+            b?.resolution_date ??
+            b?.closed_at ??
+            b?.updated_at ??
+            0
         ).getTime();
         return db - da;
       });
@@ -152,21 +250,52 @@ export default function UserDashboard() {
     }));
   }, [doneTickets]);
 
+  const openTicketModal = async (ticket) => {
+    setSelectedTicket(ticket);
+
+    const idTicket = getRealId(ticket);
+    if (!idTicket) return;
+
+    try {
+      setDetailLoading(true);
+      const res = await fetchUserTicketDetail(idTicket);
+      const detail = res?.data ?? res;
+      const merged = { ...ticket, ...detail };
+      setSelectedTicket(merged);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const onClickNotifItem = (item) => {
-    setSelectedTicket(item.ticket);
+    openTicketModal(item.ticket);
     setNotifOpen(false);
   };
 
   const openSidebar = () => setSidebarOpen(true);
   const closeSidebar = () => setSidebarOpen(false);
 
+  const attachments = getAttachments(selectedTicket)
+    .map(normalizeAttachment)
+    .filter(Boolean);
+
   return (
     <div className="user-page">
-      <UserSidebar active="dashboard" mobileOpen={sidebarOpen} onClose={closeSidebar} />
+      <UserSidebar
+        active="dashboard"
+        mobileOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
 
       <main className="user-main">
         <div className="user-mobilebar">
-          <button className="user-hamburger" onClick={openSidebar} aria-label="Buka menu">
+          <button
+            className="user-hamburger"
+            onClick={openSidebar}
+            aria-label="Buka menu"
+          >
             <span />
             <span />
             <span />
@@ -222,7 +351,10 @@ export default function UserDashboard() {
             <div className="needhelp-sub">
               Buat tiket bantuan baru dan tim kami akan membantu Anda
             </div>
-            <button className="needhelp-btn" onClick={() => navigate("/user/tickets/create")}>
+            <button
+              className="needhelp-btn"
+              onClick={() => navigate("/user/tickets/create")}
+            >
               + Buat Tiket Baru
             </button>
           </div>
@@ -235,7 +367,10 @@ export default function UserDashboard() {
               <div className="recent-title">Tiket Terbaru</div>
               <div className="recent-sub">Permintaan bantuan terbaru Anda</div>
             </div>
-            <button className="recent-viewall" onClick={() => navigate("/user/tickets")}>
+            <button
+              className="recent-viewall"
+              onClick={() => navigate("/user/tickets")}
+            >
               Lihat Semua
             </button>
           </div>
@@ -271,8 +406,8 @@ export default function UserDashboard() {
                   filtered.map((t) => {
                     const id = getId(t);
                     const title = getTitle(t);
-                    const category = t.category ?? t.category_name ?? "-";
-                    const priority = t.priority ?? "LOW";
+                    const category = t?.category ?? t?.category_name ?? "-";
+                    const priority = t?.priority ?? "LOW";
                     const updated = updatedLabel(t);
 
                     return (
@@ -292,7 +427,10 @@ export default function UserDashboard() {
                         </td>
                         <td>{updated}</td>
                         <td>
-                          <button className="view-btn" onClick={() => setSelectedTicket(t)}>
+                          <button
+                            className="view-btn"
+                            onClick={() => openTicketModal(t)}
+                          >
                             Lihat
                           </button>
                         </td>
@@ -303,6 +441,35 @@ export default function UserDashboard() {
               </tbody>
             </table>
           </div>
+
+          <div
+            className="pagination"
+            style={{
+              display: "flex",
+              gap: "8px",
+              marginTop: "14px",
+              justifyContent: "center",
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((num) => (
+              <button
+                key={num}
+                onClick={() => loadTickets(num)}
+                disabled={num > lastPage}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: currentPage === num ? "#28a745" : "#fff",
+                  color: currentPage === num ? "#fff" : "#333",
+                  border: "1px solid #ddd",
+                  cursor: num > lastPage ? "not-allowed" : "pointer",
+                  borderRadius: "4px",
+                  opacity: num > lastPage ? 0.5 : 1,
+                }}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="info-grid">
@@ -310,7 +477,10 @@ export default function UserDashboard() {
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
             <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
-            <button className="info-link-btn" onClick={() => navigate("/user/faq")}>
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/faq")}
+            >
               Lihat FAQ →
             </button>
           </div>
@@ -319,7 +489,10 @@ export default function UserDashboard() {
             <div className="info-icon info-green">🗓️</div>
             <div className="info-title">Jam Layanan</div>
             <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
-            <button className="info-link-btn" onClick={() => navigate("/user/service-hours")}>
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/service-hours")}
+            >
               Lihat Jadwal →
             </button>
           </div>
@@ -330,7 +503,10 @@ export default function UserDashboard() {
             <div className="info-sub">
               Pahami bagaimana tiket Anda diproses langkah demi langkah
             </div>
-            <button className="info-link-btn" onClick={() => navigate("/user/how-it-works")}>
+            <button
+              className="info-link-btn"
+              onClick={() => navigate("/user/how-it-works")}
+            >
               Lihat Panduan →
             </button>
           </div>
@@ -355,7 +531,7 @@ export default function UserDashboard() {
             <div className="modal-body">
               <div className="modal-row">
                 <span>Judul</span>
-                <strong>{selectedTicket.title ?? selectedTicket.subject}</strong>
+                <strong>{selectedTicket.title ?? selectedTicket.subject ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
@@ -401,8 +577,31 @@ export default function UserDashboard() {
                 <p>{selectedTicket.description || "-"}</p>
               </div>
 
+              <div className="modal-desc">
+                <div className="modal-desc-title">Lampiran</div>
+
+                {detailLoading ? (
+                  <p>Memuat lampiran...</p>
+                ) : attachments.length === 0 ? (
+                  <p>-</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {attachments.map((att, i) => {
+                      const href = buildStorageUrlIfNeeded(att.url);
+                      return (
+                        <li key={i}>
+                          <a href={href} target="_blank" rel="noreferrer">
+                            {att.name}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
               <div className="modal-chat-wrapper">
-                <TicketChatPanel ticket={selectedTicket} />
+                <TicketChatPanel ticket={selectedTicket} user={user} />
               </div>
             </div>
           </div>

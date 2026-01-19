@@ -5,18 +5,17 @@ import api from "./api";
  * ============================ */
 
 /**
- * Ambil semua ticket milik user yang sedang login
- * GET /api/tickets  (userIndex)
+ * Ambil semua ticket milik user login
+ * GET /api/tickets
  */
 export const fetchUserTickets = async (params = {}) => {
   const res = await api.get("/tickets", { params });
-  // backend kirim: { message: "...", data: [...] }
-  return res.data; // bisa {data:[...]} atau langsung [...]
+  return res.data;
 };
 
 /**
  * Ambil detail 1 ticket user
- * GET /api/tickets/{id_ticket}
+ * GET /api/tickets/{id}
  */
 export const fetchUserTicketDetail = async (id) => {
   const res = await api.get(`/tickets/${id}`);
@@ -26,7 +25,6 @@ export const fetchUserTicketDetail = async (id) => {
 /**
  * Buat ticket baru
  * POST /api/tickets
- * - di frontend kamu kirim FormData, jadi cek dulu tipenya
  */
 export const createUserTicket = async (payload) => {
   const isFormData = payload instanceof FormData;
@@ -41,8 +39,8 @@ export const createUserTicket = async (payload) => {
 };
 
 /**
- * Update ticket user (kalau dipakai)
- * PUT /api/tickets/{id_ticket}
+ * Update ticket user
+ * PUT /api/tickets/{id}
  */
 export const updateUserTicket = async (id, payload) => {
   const res = await api.put(`/tickets/${id}`, payload);
@@ -50,8 +48,8 @@ export const updateUserTicket = async (id, payload) => {
 };
 
 /**
- * Hapus ticket user (kalau dipakai)
- * DELETE /api/tickets/{id_ticket}
+ * Hapus ticket user
+ * DELETE /api/tickets/{id}
  */
 export const deleteUserTicket = async (id) => {
   const res = await api.delete(`/tickets/${id}`);
@@ -63,8 +61,9 @@ export const deleteUserTicket = async (id) => {
  * ============================ */
 
 /**
- * Ambil semua ticket untuk admin
- * GET /api/admin/tickets
+ * Ambil semua ticket (ADMIN) - PAGINATION
+ * GET /api/admin/tickets?page=1
+ * Backend return paginator: { message, data: { current_page, data:[...], ... } }
  */
 export const fetchAdminTickets = async (params = {}) => {
   const res = await api.get("/admin/tickets", { params });
@@ -72,8 +71,18 @@ export const fetchAdminTickets = async (params = {}) => {
 };
 
 /**
- * Detail 1 ticket untuk admin
- * GET /api/admin/tickets/{id_ticket}
+ * Ambil 10 ticket terbaru untuk DASHBOARD ADMIN
+ * GET /api/admin/dashboard/recent-tickets
+ * Backend sudah limit 10, jadi FE tidak perlu kirim page/perPage
+ */
+export const fetchAdminRecentTickets = async () => {
+  const res = await api.get("/admin/dashboard/recent-tickets");
+  return res.data;
+};
+
+/**
+ * Detail 1 ticket (ADMIN)
+ * GET /api/admin/tickets/{id}
  */
 export const fetchAdminTicketDetail = async (id) => {
   const res = await api.get(`/admin/tickets/${id}`);
@@ -81,59 +90,62 @@ export const fetchAdminTicketDetail = async (id) => {
 };
 
 /**
- * Admin update status tiket (dipakai di AdminTickets.jsx)
- * PATCH /api/admin/tickets/{id_ticket}/status
- *
- * newStatus HARUS salah satu:
- *  - "OPEN"
- *  - "IN_PROGRESS"
- *  - "RESOLVED"
- *
- * (kalau kirim "CLOSED" akan ditolak backend, karena tidak ada di validasi)
+ * Summary dashboard admin
+ * GET /api/admin/dashboard/summary
+ */
+export const fetchAdminSummary = async () => {
+  const res = await api.get("/admin/dashboard/summary");
+  return res.data;
+};
+
+/**
+ * Update status ticket (ADMIN) - FLOW ENDPOINT
+ * IN_REVIEW  -> PATCH /api/admin/tickets/{id}/open
+ * IN_PROGRESS-> PATCH /api/admin/tickets/{id}/start-work
+ * RESOLVED   -> PATCH /api/admin/tickets/{id}/resolve
  */
 export const adminUpdateTicketStatus = async (idTicket, newStatus) => {
-  const res = await api.patch(`/admin/tickets/${idTicket}/status`, {
-    status: newStatus,
-  });
-  return res.data; // { message, data: {...ticket} }
+  const st = String(newStatus || "").toUpperCase();
+
+  if (st === "IN_REVIEW") {
+    const res = await api.patch(`/admin/tickets/${idTicket}/open`);
+    return res.data; // { message, ticket, chat }
+  }
+
+  if (st === "IN_PROGRESS") {
+    const res = await api.patch(`/admin/tickets/${idTicket}/start-work`);
+    return res.data; // { message, ticket }
+  }
+
+  if (st === "RESOLVED") {
+    const res = await api.patch(`/admin/tickets/${idTicket}/resolve`);
+    return res.data; // { message, ticket }
+  }
+
+  throw new Error(`Status "${st}" belum didukung oleh endpoint backend.`);
 };
 
 /**
- * Versi generic pakai payload object
- * Tetap ke endpoint: PATCH /api/admin/tickets/{id_ticket}/status
+ * Generic update ticket (ADMIN)
+ * Kalau dipakai, arahkan ke flow status juga
  */
 export const adminUpdateTicket = async (id, payload) => {
-  const res = await api.patch(`/admin/tickets/${id}/status`, payload);
-  return res.data;
+  const st = String(payload?.status || "").toUpperCase();
+  return adminUpdateTicketStatus(id, st);
 };
 
-// ============================
-// TICKET CHAT (USER & ADMIN)
-// ============================
+/* ============================
+ * TICKET CHAT
+ * ============================ */
 
-/**
- * Ambil semua pesan chat dalam 1 ticket
- * GET /api/tickets/{id_ticket}/messages
- */
 export const fetchTicketMessages = async (ticketId) => {
   const res = await api.get(`/tickets/${ticketId}/messages`);
-  // backend: { message: 'Messages fetched', data: [...] }
   return res.data;
 };
 
-/**
- * Kirim pesan + (optional) multi file
- * POST /api/tickets/{id_ticket}/messages
- *
- * payload: FormData
- *  - message_body (string, optional)
- *  - files[] (file, optional)
- */
 export const sendTicketMessage = async (ticketId, formData) => {
   const res = await api.post(`/tickets/${ticketId}/messages`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  // backend: { message: 'Message sent', data: {...} }
   return res.data;
 };
-

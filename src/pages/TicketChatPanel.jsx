@@ -13,64 +13,42 @@ export default function TicketChatPanel({ ticket }) {
   }, []);
 
   const isAdmin = currentUser.role === "admin";
-
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
 
   const bodyRef = useRef(null);
-
   const status = String(ticket?.status || "").toUpperCase();
 
-  // Memastikan aturan lock chat sesuai dengan logic backend
   const chatLockedInfo = useMemo(() => {
     if (!ticketId) return "Tiket tidak ditemukan.";
-
-    if (status === "OPEN" && !isAdmin) {
-      return "Menunggu admin membuka tiket. Chat sementara dikunci.";
-    }
-
-    if (status === "IN_REVIEW" && !isAdmin) {
-      return "Tiket sedang ditinjau admin. Chat sementara dikunci.";
-    }
-
-    if (status === "RESOLVED" && !isAdmin) {
-      return "Tiket sudah selesai. Chat tidak bisa digunakan lagi.";
-    }
-
+    if (status === "OPEN" && !isAdmin)
+      return "Menunggu admin membuka tiket. Chat dikunci.";
+    if (status === "IN_REVIEW" && !isAdmin)
+      return "Tiket sedang ditinjau. Chat dikunci.";
+    if (status === "RESOLVED" && !isAdmin)
+      return "Tiket selesai. Chat ditutup.";
     return null;
   }, [status, isAdmin, ticketId]);
 
   const canSend = !chatLockedInfo;
 
   useEffect(() => {
-    if (!ticketId) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
-
+    if (!ticketId) return;
     let cancelled = false;
 
     const loadMessages = async (silent = false) => {
       try {
         if (!silent) setLoading(true);
-        setErrorMsg("");
-
         const res = await fetchTicketMessages(ticketId);
-        // Pastikan mengambil data dari res.data karena Laravel Resource/JSON
-        const list = Array.isArray(res?.data) ? res.data : (res || []);
-
+        // Penting: Laravel Resource biasanya membungkus data dalam properti 'data'
+        const list = Array.isArray(res?.data) ? res.data : res || [];
         if (!cancelled) setMessages(list);
       } catch (err) {
-        console.error(err);
-        if (!cancelled && !silent) {
-          setErrorMsg(err?.response?.data?.message || "Gagal mengambil pesan.");
-        }
+        if (!cancelled && !silent) setErrorMsg("Gagal memuat pesan.");
       } finally {
         if (!cancelled && !silent) setLoading(false);
       }
@@ -78,93 +56,70 @@ export default function TicketChatPanel({ ticket }) {
 
     loadMessages(false);
     const interval = setInterval(() => loadMessages(true), 5000);
-
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
   }, [ticketId]);
 
-  // Auto-scroll ke bawah saat ada pesan baru
   useEffect(() => {
-    if (bodyRef.current) {
+    if (bodyRef.current)
       bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-    }
   }, [messages]);
-
-  const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files || []);
-    setFiles(selected);
-  };
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!canSend || sending) return;
-
-    if (!text.trim() && files.length === 0) {
-      setErrorMsg("Pesan atau file tidak boleh kosong.");
-      return;
-    }
+    if (!text.trim() && files.length === 0) return;
 
     try {
       setSending(true);
-      setErrorMsg("");
-
       const fd = new FormData();
       if (text.trim()) fd.append("message_body", text.trim());
       files.forEach((file) => fd.append("files[]", file));
 
       const res = await sendTicketMessage(ticketId, fd);
+      // Tambahkan pesan baru ke state agar langsung muncul
       const newMsg = res.data || res;
-
       setMessages((prev) => [...prev, newMsg]);
       setText("");
       setFiles([]);
-      
-      // Jika admin yang chat pertama kali di status OPEN, 
-      // bisa tambahkan window.location.reload() jika ingin status di header langsung update
     } catch (err) {
-      setErrorMsg(err?.response?.data?.message || "Gagal mengirim pesan.");
+      setErrorMsg(err?.response?.data?.message || "Gagal mengirim.");
     } finally {
       setSending(false);
     }
   };
 
-  // Helper URL File
+  // HELPER URL: Memastikan mengarah ke Port 8000
   const getBackendRoot = () => {
-    const base = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
+    // Gunakan VITE_API_URL atau VITE_API_BASE_URL sesuai .env kamu
+    const base =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000/api";
     return base.replace(/\/api\/?$/, "");
   };
 
-  const buildFileUrl = (att) => {
-    const root = getBackendRoot();
-    const path = String(att?.file_path || "").replace(/^\/+/, "");
-    return `${root}/storage/${path}`;
-  };
-
   const openAttachment = async (att) => {
+    const root = getBackendRoot();
+    const cleanPath = String(att?.file_path || "").replace(/^\/+/, "");
+    const fullUrl = `${root}/storage/${cleanPath}`;
+
     try {
       const token = localStorage.getItem("token");
-      const url = buildFileUrl(att);
-
-      const res = await fetch(url, {
+      // Coba fetch dulu untuk file yang butuh proteksi (private)
+      const res = await fetch(fullUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      if (!res.ok) throw new Error("File tidak dapat diakses.");
+      if (!res.ok) throw new Error();
 
       const contentType = res.headers.get("content-type") || "";
-      const rawBlob = await res.blob();
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
-      if (contentType.includes("text/html")) {
-        throw new Error("Gagal memuat file (404 Not Found).");
-      }
-
-      const blobUrl = URL.createObjectURL(rawBlob);
-      const isPreviewable = /image|pdf/i.test(contentType) || 
-                            /\.(pdf|jpg|jpeg|png|webp)$/i.test(att.file_name);
-
-      if (isPreviewable) {
+      if (/image|pdf/i.test(contentType)) {
         window.open(blobUrl, "_blank");
       } else {
         const a = document.createElement("a");
@@ -172,9 +127,10 @@ export default function TicketChatPanel({ ticket }) {
         a.download = att.file_name;
         a.click();
       }
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (e) {
-      alert(e.message);
+      // FALLBACK: Jika fetch gagal (CORS/SSL), langsung buka URL di tab baru
+      console.warn("Fetch failed, falling back to direct link");
+      window.open(fullUrl, "_blank");
     }
   };
 
@@ -182,36 +138,58 @@ export default function TicketChatPanel({ ticket }) {
     <div className="ticket-chat">
       <div className="ticket-chat-header">
         <h3>Diskusi Tiket</h3>
-        <p className="ticket-chat-sub">Diskusi solusi antara Anda dan Admin IT.</p>
+        <p className="ticket-chat-sub">Komunikasi dengan Admin IT</p>
       </div>
 
-      {errorMsg && <div className="ticket-chat-error">{errorMsg}</div>}
-
       <div className="ticket-chat-body" ref={bodyRef}>
-        {loading ? (
-          <div className="ticket-chat-empty">Memuat chat...</div>
-        ) : messages.length === 0 ? (
-          <div className="ticket-chat-empty">Belum ada pesan.</div>
+        {loading && messages.length === 0 ? (
+          <div className="ticket-chat-empty">Memuat...</div>
         ) : (
           messages.map((msg) => {
-            const isMe = (msg.id_sender ?? msg.sender?.id) === currentUser.id;
-            const senderName = msg.sender?.name || (msg.sender?.role === 'admin' ? "Admin" : "User");
-            
+            const sender = msg.sender || {};
+            const isMe = (msg.id_sender ?? sender.id) === currentUser.id;
+            const name =
+              sender.name || (sender.role === "admin" ? "Admin" : "User");
+
+            // Cari bagian rendering chat bubble di TicketChatPanel.jsx
             return (
-              <div key={msg.id_message} className={`chat-row ${isMe ? "chat-row-right" : "chat-row-left"}`}>
-                <div className="chat-avatar">{senderName[0]?.toUpperCase()}</div>
+              <div
+                key={msg.id_message}
+                className={`chat-row ${isMe ? "chat-row-right" : "chat-row-left"}`}
+              >
+                <div className="chat-avatar">{name[0]?.toUpperCase()}</div>
                 <div className="chat-bubble">
                   <div className="chat-meta">
-                    <span className="chat-sender">{senderName}</span>
-                    <span className="chat-time">{new Date(msg.sent_at).toLocaleString("id-ID", { timeStyle: 'short', dateStyle: 'short' })}</span>
+                    <span className="chat-sender">{name}</span>
+                    <span className="chat-time">
+                      {new Date(msg.sent_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
-                  {msg.message_body && <div className="chat-text">{msg.message_body}</div>}
-                  
-                  {msg.attachments?.map((att) => (
-                    <button key={att.id_attachment} onClick={() => openAttachment(att)} className="chat-attachment-link">
-                      📎 {att.file_name}
-                    </button>
-                  ))}
+                  {msg.message_body && (
+                    <div className="chat-text">{msg.message_body}</div>
+                  )}
+
+                  {/* UPDATE: Render Lampiran Chat di sini */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div
+                      className="chat-attachments-container"
+                      style={{ marginTop: "8px" }}
+                    >
+                      {msg.attachments.map((att) => (
+                        <button
+                          key={att.id_attachment}
+                          onClick={() => openAttachment(att)}
+                          className="chat-attachment-link"
+                          style={{ display: "block", marginBottom: "4px" }}
+                        >
+                          📎 {att.file_name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -219,23 +197,34 @@ export default function TicketChatPanel({ ticket }) {
         )}
       </div>
 
-      {chatLockedInfo && <div className="ticket-chat-locked">{chatLockedInfo}</div>}
+      {chatLockedInfo && (
+        <div className="ticket-chat-locked">{chatLockedInfo}</div>
+      )}
 
       <form className="ticket-chat-form" onSubmit={handleSend}>
         <textarea
           className="ticket-chat-input"
-          rows={2}
-          placeholder={canSend ? "Tulis pesan..." : "Chat dikunci"}
+          placeholder={canSend ? "Tulis pesan..." : "Chat terkunci"}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={!canSend || sending}
         />
         <div className="ticket-chat-form-bottom">
           <label className="ticket-chat-file">
-            📎 <input type="file" multiple onChange={handleFileChange} disabled={!canSend || sending} hidden />
+            📎{" "}
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setFiles(Array.from(e.target.files))}
+              hidden
+              disabled={!canSend || sending}
+            />
           </label>
-          {files.length > 0 && <span className="ticket-chat-file-names">{files.length} file</span>}
-          <button type="submit" className="ticket-chat-send-btn" disabled={!canSend || sending || (!text.trim() && files.length === 0)}>
+          <button
+            type="submit"
+            className="ticket-chat-send-btn"
+            disabled={!canSend || sending}
+          >
             {sending ? "..." : "Kirim"}
           </button>
         </div>

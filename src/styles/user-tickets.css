@@ -280,3 +280,60 @@
     min-width: 920px;
   }
 }
+
+.ticket-chat .chat-attachments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ticket-chat .chat-attachment-link {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ticket-chat .chat-attachment-link:hover {
+  background: #f3f4f6;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.ticket-chat .chat-attachment-link:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.ticket-chat .chat-row-right .chat-bubble .chat-attachment-link {
+  background: rgba(29, 78, 216, 0.08);
+  border-color: rgba(29, 78, 216, 0.18);
+  color: #1d4ed8;
+}
+
+.ticket-chat .chat-row-right .chat-bubble .chat-attachment-link:hover {
+  background: rgba(29, 78, 216, 0.12);
+}
+
+.ticket-chat .chat-row-left .chat-bubble .chat-attachment-link {
+  background: #f8fafc;
+}
+

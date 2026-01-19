@@ -20,9 +20,13 @@ export default function AdminTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const closeModal = () => setSelectedTicket(null);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+
+  const closeModal = () => setSelectedTicket(null);
 
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
@@ -34,19 +38,37 @@ export default function AdminTickets() {
 
   const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
 
-  const loadTickets = async () => {
+  // parser paginator backend: { message, data: { data: [...] , current_page, last_page } }
+  const parsePaginator = (res) => {
+    // res dari service = res.data axios
+    // bentuk: { message, data: { current_page, data: [], last_page } }
+    const payload = res || {};
+    const pager = payload?.data || {};
+
+    const list = Array.isArray(pager?.data) ? pager.data : [];
+    const cp = Number(pager?.current_page ?? 1);
+    const lp = Number(pager?.last_page ?? 1);
+
+    return { list, current_page: cp, last_page: lp };
+  };
+
+  const loadTickets = async (page = 1) => {
     try {
       setLoading(true);
       setErrorMsg("");
 
-      const data = await fetchAdminTickets();
-      const list = Array.isArray(data?.data) ? data.data : data;
+      const res = await fetchAdminTickets({ page });
+      const pager = parsePaginator(res);
 
-      setTickets(Array.isArray(list) ? list : []);
+      setTickets(pager.list);
+      setCurrentPage(pager.current_page);
+      setLastPage(pager.last_page);
     } catch (err) {
       console.error(err);
+      setTickets([]);
       setErrorMsg(
-        err?.response?.data?.message || "Gagal mengambil data tiket dari server."
+        err?.response?.data?.message ||
+          "Gagal mengambil data tiket dari server.",
       );
     } finally {
       setLoading(false);
@@ -54,7 +76,7 @@ export default function AdminTickets() {
   };
 
   useEffect(() => {
-    loadTickets();
+    loadTickets(1);
   }, []);
 
   const counts = useMemo(() => {
@@ -67,13 +89,13 @@ export default function AdminTickets() {
     };
   }, [tickets]);
 
-  const getId = (t) => t.code_ticket ?? t.id_ticket ?? t.id ?? "-";
-  const getTitle = (t) => t.title ?? "-";
-  const getCategory = (t) => t.category ?? "-";
-  const getPriority = (t) => String(t.priority ?? "LOW");
+  const getId = (t) => t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
+  const getTitle = (t) => t?.title ?? "-";
+  const getCategory = (t) => t?.category ?? "-";
+  const getPriority = (t) => String(t?.priority ?? "LOW");
 
   const getCreated = (t) => {
-    const raw = t.created_at ?? t.createdAt ?? t.date;
+    const raw = t?.created_at ?? t?.createdAt ?? t?.date;
     if (!raw) return "-";
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return String(raw);
@@ -87,7 +109,7 @@ export default function AdminTickets() {
   };
 
   const getResolved = (t) => {
-    const raw = t.resolved_at ?? t.resolution_date;
+    const raw = t?.resolved_at ?? t?.resolution_date;
     if (!raw) return "-";
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return String(raw);
@@ -146,15 +168,15 @@ export default function AdminTickets() {
     return "Terbuka";
   };
 
-  // ========= Lampiran helpers =========
+  // Lampiran (tetap punyamu)
   const getAttachments = (t) => {
     if (!t) return [];
-    if (Array.isArray(t.attachments) && t.attachments.length) return t.attachments;
-    if (Array.isArray(t.files) && t.files.length) return t.files;
-    if (t.attachment) return [t.attachment];
-    if (t.attachment_url) return [t.attachment_url];
-    if (t.attachment_path) return [t.attachment_path];
-    return [];
+    const allFiles = Array.isArray(t.attachments)
+      ? t.attachments
+      : Array.isArray(t.files)
+        ? t.files
+        : [];
+    return allFiles.filter((file) => !file.id_message);
   };
 
   const normalizeAttachment = (a) => {
@@ -186,16 +208,18 @@ export default function AdminTickets() {
     if (!urlOrPath) return "";
     if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
 
-    const base = import.meta.env.VITE_API_BASE_URL || "";
+    const base =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000/api";
     const root = base.replace(/\/api\/?$/, "");
+    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
 
-    if (urlOrPath.startsWith("/")) return `${root}${urlOrPath}`;
-    if (urlOrPath.startsWith("storage/")) return `${root}/${urlOrPath}`;
-    return `${root}/storage/${urlOrPath}`;
+    return cleanPath.startsWith("storage/")
+      ? `${root}/${cleanPath}`
+      : `${root}/storage/${cleanPath}`;
   };
-  // ===================================
 
-  // ✅ FIX UTAMA ADA DI SINI: res dari service sudah "data", jadi pakai res?.data ?? res
   const openTicketModal = async (ticket) => {
     setSelectedTicket(ticket);
 
@@ -206,15 +230,15 @@ export default function AdminTickets() {
       setDetailLoading(true);
       const res = await fetchAdminTicketDetail(idTicket);
 
-      // fetchAdminTicketDetail return res.data dari axios
-      // biasanya bentuknya { message, data: {...ticket...} }
-      const detail = res?.data ?? res;
+      // backend show(): { message, data: {...} }
+      const payload = res?.data ?? res;
+      const detail = payload?.data ?? payload;
 
       const merged = { ...ticket, ...detail };
-
       setSelectedTicket(merged);
+
       setTickets((prev) =>
-        prev.map((t) => (getRealId(t) === idTicket ? { ...t, ...detail } : t))
+        prev.map((t) => (getRealId(t) === idTicket ? merged : t)),
       );
     } catch (err) {
       console.error(err);
@@ -242,11 +266,13 @@ export default function AdminTickets() {
       setUpdatingId(idTicket);
 
       const result = await adminUpdateTicketStatus(idTicket, newStatus);
-      const updatedTicket = result?.data ?? result;
-      const merged = { ...ticket, ...updatedTicket };
+
+      // backend flow return: { ticket: {...} } atau { ticket, chat }
+      const updated = result?.ticket ?? result?.data ?? result;
+      const merged = { ...ticket, ...updated };
 
       setTickets((prev) =>
-        prev.map((t) => (getRealId(t) === idTicket ? merged : t))
+        prev.map((t) => (getRealId(t) === idTicket ? merged : t)),
       );
 
       setSelectedTicket((prev) => {
@@ -257,7 +283,11 @@ export default function AdminTickets() {
       return merged;
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Gagal mengubah status tiket.");
+      alert(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Gagal mengubah status tiket.",
+      );
       return null;
     } finally {
       setUpdatingId(null);
@@ -296,18 +326,15 @@ export default function AdminTickets() {
     await handleUpdateStatus(ticket, "RESOLVED");
   };
 
-  const handleReopen = async (ticket) => {
-    const st = String(ticket.status || "").toUpperCase();
-    if (st !== "RESOLVED" && st !== "CLOSED") return;
-    await handleUpdateStatus(ticket, "OPEN");
+  // NOTE: reopen butuh endpoint backend khusus, sementara nonaktifkan agar tidak bikin error
+  const handleReopen = async () => {
+    alert("Reopen ke OPEN belum ada endpoint-nya di backend.");
   };
 
   const renderActionButtons = (t) => {
     const st = normalizeStatus(t.status);
     const idTicket = getRealId(t);
     const isLoading = updatingId && idTicket && updatingId === idTicket;
-
-    // supaya klik tombol tidak ikut membuka modal row
     const stop = (e) => e.stopPropagation();
 
     if (st === "open") {
@@ -390,6 +417,10 @@ export default function AdminTickets() {
     .map(normalizeAttachment)
     .filter(Boolean);
 
+  // Pagination UI: selalu 1..5 (sesuai requirement), tapi disable kalau lastPage kecil
+  const pageButtons = [1, 2, 3, 4, 5];
+  const maxPage = Math.min(5, Math.max(1, lastPage));
+
   return (
     <div className="admin-page tickets-layout">
       <AdminSidebar
@@ -403,7 +434,9 @@ export default function AdminTickets() {
           <div className="tickets-header">
             <div>
               <h1 className="tickets-title">Semua Tiket</h1>
-              <p className="tickets-subtitle">Lihat dan kelola seluruh tiket bantuan</p>
+              <p className="tickets-subtitle">
+                Lihat dan kelola seluruh tiket bantuan
+              </p>
             </div>
 
             <div className="tickets-header-right">
@@ -440,7 +473,8 @@ export default function AdminTickets() {
               <div className="tickets-filters">
                 <button
                   className={
-                    "filter-chip" + (statusFilter === "open" ? " active open" : "")
+                    "filter-chip" +
+                    (statusFilter === "open" ? " active open" : "")
                   }
                   onClick={() => setStatusFilter("open")}
                 >
@@ -462,7 +496,9 @@ export default function AdminTickets() {
                 <button
                   className={
                     "filter-chip" +
-                    (statusFilter === "in_progress" ? " active in-progress" : "")
+                    (statusFilter === "in_progress"
+                      ? " active in-progress"
+                      : "")
                   }
                   onClick={() => setStatusFilter("in_progress")}
                 >
@@ -472,7 +508,8 @@ export default function AdminTickets() {
 
                 <button
                   className={
-                    "filter-chip" + (statusFilter === "closed" ? " active closed" : "")
+                    "filter-chip" +
+                    (statusFilter === "closed" ? " active closed" : "")
                   }
                   onClick={() => setStatusFilter("closed")}
                 >
@@ -481,7 +518,9 @@ export default function AdminTickets() {
                 </button>
 
                 <button
-                  className={"filter-chip" + (statusFilter === "all" ? " active" : "")}
+                  className={
+                    "filter-chip" + (statusFilter === "all" ? " active" : "")
+                  }
                   onClick={() => setStatusFilter("all")}
                 >
                   Semua ({tickets.length})
@@ -492,59 +531,100 @@ export default function AdminTickets() {
             {loading ? (
               <div className="tickets-loading">Memuat tiket...</div>
             ) : (
-              <div className="tickets-table-wrapper">
-                <table className="tickets-table">
-                  <thead>
-                    <tr>
-                      <th>ID Tiket</th>
-                      <th>Judul</th>
-                      <th>Kategori</th>
-                      <th>Prioritas</th>
-                      <th>Status</th>
-                      <th>Dibuat</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTickets.length === 0 ? (
+              <>
+                <div className="tickets-table-wrapper">
+                  <table className="tickets-table">
+                    <thead>
                       <tr>
-                        <td colSpan="7" className="empty-row">
-                          Tidak ada tiket yang cocok.
-                        </td>
+                        <th>ID Tiket</th>
+                        <th>Judul</th>
+                        <th>Kategori</th>
+                        <th>Prioritas</th>
+                        <th>Status</th>
+                        <th>Dibuat</th>
+                        <th>Aksi</th>
                       </tr>
-                    ) : (
-                      filteredTickets.map((t, idx) => {
-                        const id = getId(t);
-                        const title = getTitle(t);
-                        const cat = getCategory(t);
-                        const priority = getPriority(t);
-                        const st = normalizeStatus(t.status);
-                        const created = getCreated(t);
+                    </thead>
+                    <tbody>
+                      {filteredTickets.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="empty-row">
+                            Tidak ada tiket yang cocok.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredTickets.map((t, idx) => {
+                          const id = getId(t);
+                          const title = getTitle(t);
+                          const cat = getCategory(t);
+                          const priority = getPriority(t);
+                          const st = normalizeStatus(t.status);
+                          const created = getCreated(t);
 
-                        return (
-                          <tr
-                            key={id || idx}
-                            onClick={() => openTicketModal(t)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            <td>{id}</td>
-                            <td className="ticket-title-cell">{title}</td>
-                            <td>{cat}</td>
-                            <td>
-                              <span className={priorityClass(priority)}>{priority}</span>
-                            </td>
-                            <td>
-                              <span className={statusClass(st)}>{statusLabel(st)}</span>
-                            </td>
-                            <td>{created}</td>
-                            <td>{renderActionButtons(t)}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          return (
+                            <tr
+                              key={id || idx}
+                              onClick={() => openTicketModal(t)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <td>{id}</td>
+                              <td className="ticket-title-cell">{title}</td>
+                              <td>{cat}</td>
+                              <td>
+                                <span className={priorityClass(priority)}>
+                                  {priority}
+                                </span>
+                              </td>
+                              <td>
+                                <span className={statusClass(st)}>
+                                  {statusLabel(st)}
+                                </span>
+                              </td>
+                              <td>{created}</td>
+                              <td>{renderActionButtons(t)}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination 1..5 */}
+                <div
+                  className="pagination"
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    marginTop: "16px",
+                    justifyContent: "center",
+                  }}
+                >
+                  {pageButtons.map((num) => {
+                    const disabled = num > maxPage;
+                    const active = currentPage === num;
+
+                    return (
+                      <button
+                        key={num}
+                        disabled={disabled}
+                        onClick={() => loadTickets(num)}
+                        style={{
+                          padding: "8px 14px",
+                          backgroundColor: active ? "#16a34a" : "#fff",
+                          color: active ? "#fff" : "#333",
+                          border: "1px solid #ddd",
+                          cursor: disabled ? "not-allowed" : "pointer",
+                          borderRadius: "6px",
+                          opacity: disabled ? 0.5 : 1,
+                        }}
+                      >
+                        {num}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -583,7 +663,11 @@ export default function AdminTickets() {
               <div className="modal-row">
                 <span>Status</span>
                 <strong>
-                  <span className={statusClass(normalizeStatus(selectedTicket.status))}>
+                  <span
+                    className={statusClass(
+                      normalizeStatus(selectedTicket.status),
+                    )}
+                  >
                     {statusLabel(normalizeStatus(selectedTicket.status))}
                   </span>
                 </strong>

@@ -26,9 +26,12 @@ export default function UserTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const closeModal = () => setSelectedTicket(null);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(5);
+
+  const closeModal = () => setSelectedTicket(null);
 
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
@@ -68,19 +71,16 @@ export default function UserTickets() {
     return formatJakarta(raw);
   };
 
-  // =========================
-  // Lampiran helpers (mirip admin)
-  // =========================
   const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
 
   const getAttachments = (t) => {
     if (!t) return [];
-    if (Array.isArray(t.attachments) && t.attachments.length) return t.attachments;
-    if (Array.isArray(t.files) && t.files.length) return t.files;
-    if (t.attachment) return [t.attachment];
-    if (t.attachment_url) return [t.attachment_url];
-    if (t.attachment_path) return [t.attachment_path];
-    return [];
+    const allFiles = Array.isArray(t.attachments)
+      ? t.attachments
+      : Array.isArray(t.files)
+      ? t.files
+      : [];
+    return allFiles.filter((file) => !file.id_message);
   };
 
   const normalizeAttachment = (a) => {
@@ -112,34 +112,70 @@ export default function UserTickets() {
     if (!urlOrPath) return "";
     if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
 
-    const base = import.meta.env.VITE_API_BASE_URL || "";
-    const root = base.replace(/\/api\/?$/, "");
+    const base =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000/api";
 
-    if (urlOrPath.startsWith("/")) return `${root}${urlOrPath}`;
-    if (urlOrPath.startsWith("storage/")) return `${root}/${urlOrPath}`;
-    return `${root}/storage/${urlOrPath}`;
+    const root = base.replace(/\/api\/?$/, "");
+    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
+
+    return cleanPath.startsWith("storage/")
+      ? `${root}/${cleanPath}`
+      : `${root}/storage/${cleanPath}`;
   };
-  // =========================
+
+  const parsePaginator = (res) => {
+    const payload = res || {};
+    const pager = payload?.data || {};
+    const list = Array.isArray(pager?.data) ? pager.data : [];
+    const cp = Number(pager?.current_page ?? 1);
+    const lp = Number(pager?.last_page ?? 5);
+    return { list, current_page: cp, last_page: lp };
+  };
+
+  const loadTickets = async (page = 1) => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+
+      const statusParam =
+        statusFilter === "all"
+          ? undefined
+          : statusFilter === "open"
+          ? "OPEN"
+          : statusFilter === "review"
+          ? "IN_REVIEW"
+          : statusFilter === "progress"
+          ? "IN_PROGRESS"
+          : "RESOLVED";
+
+      const res = await fetchUserTickets({ page, status: statusParam });
+      const pager = parsePaginator(res);
+
+      setTickets(pager.list);
+      setCurrentPage(pager.current_page);
+      setLastPage(pager.last_page);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal mengambil data tiket dari server."
+      );
+      setTickets([]);
+      setCurrentPage(1);
+      setLastPage(5);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setErrorMsg("");
-        const data = await fetchUserTickets();
-        const list = Array.isArray(data?.data) ? data.data : data;
-        setTickets(Array.isArray(list) ? list : []);
-      } catch (err) {
-        console.error(err);
-        setErrorMsg(
-          err?.response?.data?.message || "Gagal mengambil data tiket dari server."
-        );
-        setTickets([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadTickets(1);
   }, []);
+
+  useEffect(() => {
+    loadTickets(1);
+  }, [statusFilter]);
 
   const filtered = tickets.filter((t) => {
     const q = query.toLowerCase();
@@ -148,13 +184,12 @@ export default function UserTickets() {
     const category = String(t.category ?? t.category_name ?? "").toLowerCase();
     const desc = String(t.description ?? "").toLowerCase();
 
-    const matchText =
-      id.includes(q) || title.includes(q) || category.includes(q) || desc.includes(q);
-
-    const st = normalizeStatus(t.status);
-    const matchStatus = statusFilter === "all" ? true : st === statusFilter;
-
-    return matchText && matchStatus;
+    return (
+      id.includes(q) ||
+      title.includes(q) ||
+      category.includes(q) ||
+      desc.includes(q)
+    );
   });
 
   const priorityClass = (p) => `ut-pill ut-pri-${String(p || "").toLowerCase()}`;
@@ -171,9 +206,6 @@ export default function UserTickets() {
   const openSidebar = () => setSidebarOpen(true);
   const closeSidebar = () => setSidebarOpen(false);
 
-  // =========================
-  // Ambil detail tiket user dulu, biar lampiran kebawa
-  // =========================
   const openTicketModal = async (ticket) => {
     setSelectedTicket(ticket);
 
@@ -183,10 +215,7 @@ export default function UserTickets() {
     try {
       setDetailLoading(true);
       const res = await fetchUserTicketDetail(idTicket);
-
-      // res dari service kamu: res.data, biasanya bentuknya { message, data: {...} }
       const detail = res?.data ?? res;
-
       const merged = { ...ticket, ...detail };
       setSelectedTicket(merged);
     } catch (err) {
@@ -195,7 +224,6 @@ export default function UserTickets() {
       setDetailLoading(false);
     }
   };
-  // =========================
 
   const attachments = getAttachments(selectedTicket)
     .map(normalizeAttachment)
@@ -203,11 +231,19 @@ export default function UserTickets() {
 
   return (
     <div className="user-page">
-      <UserSidebar active="my-tickets" mobileOpen={sidebarOpen} onClose={closeSidebar} />
+      <UserSidebar
+        active="my-tickets"
+        mobileOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
 
       <main className="user-main">
         <div className="ut-mobilebar">
-          <button className="ut-hamburger" onClick={openSidebar} aria-label="Buka menu">
+          <button
+            className="ut-hamburger"
+            onClick={openSidebar}
+            aria-label="Buka menu"
+          >
             <span />
             <span />
             <span />
@@ -244,7 +280,10 @@ export default function UserTickets() {
             <option value="done">Selesai</option>
           </select>
 
-          <button className="ut-new-btn" onClick={() => navigate("/user/tickets/create")}>
+          <button
+            className="ut-new-btn"
+            onClick={() => navigate("/user/tickets/create")}
+          >
             + Buat Tiket Baru
           </button>
         </section>
@@ -306,12 +345,17 @@ export default function UserTickets() {
                           </span>
                         </td>
                         <td>
-                          <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>
+                          <span className={statusClass(t.status)}>
+                            {statusLabel(t.status)}
+                          </span>
                         </td>
                         <td className="ut-nowrap">{resolvedLabel(t)}</td>
                         <td className="ut-nowrap">{createdLabel(t)}</td>
                         <td>
-                          <button className="ut-view-btn" onClick={() => openTicketModal(t)}>
+                          <button
+                            className="ut-view-btn"
+                            onClick={() => openTicketModal(t)}
+                          >
                             Lihat
                           </button>
                         </td>
@@ -321,6 +365,35 @@ export default function UserTickets() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div
+            className="pagination"
+            style={{
+              display: "flex",
+              gap: "8px",
+              marginTop: "14px",
+              justifyContent: "center",
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((num) => (
+              <button
+                key={num}
+                onClick={() => loadTickets(num)}
+                disabled={num > lastPage}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: currentPage === num ? "#28a745" : "#fff",
+                  color: currentPage === num ? "#fff" : "#333",
+                  border: "1px solid #ddd",
+                  cursor: num > lastPage ? "not-allowed" : "pointer",
+                  borderRadius: "4px",
+                  opacity: num > lastPage ? 0.5 : 1,
+                }}
+              >
+                {num}
+              </button>
+            ))}
           </div>
         </section>
       </main>
@@ -348,7 +421,9 @@ export default function UserTickets() {
 
               <div className="modal-row">
                 <span>Kategori</span>
-                <strong>{selectedTicket.category ?? selectedTicket.category_name ?? "-"}</strong>
+                <strong>
+                  {selectedTicket.category ?? selectedTicket.category_name ?? "-"}
+                </strong>
               </div>
 
               <div className="modal-row">
