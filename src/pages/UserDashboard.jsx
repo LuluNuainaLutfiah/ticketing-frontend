@@ -30,9 +30,6 @@ export default function UserDashboard() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [lastPage, setLastPage] = useState(5);
-
   const closeModal = () => setSelectedTicket(null);
 
   const normalizeStatus = (s) => {
@@ -135,56 +132,56 @@ export default function UserDashboard() {
       : `${root}/storage/${cleanPath}`;
   };
 
-  const parsePaginator = (res) => {
-    const payload = res || {};
-    const pager = payload?.data || {};
-    const list = Array.isArray(pager?.data) ? pager.data : [];
-    const cp = Number(pager?.current_page ?? 1);
-    const lp = Number(pager?.last_page ?? 5);
-    return { list, current_page: cp, last_page: lp };
+  const mapStatusParam = (st) => {
+    if (st === "open") return "OPEN";
+    if (st === "review") return "IN_REVIEW";
+    if (st === "progress") return "IN_PROGRESS";
+    if (st === "done") return "RESOLVED";
+    return undefined;
   };
 
-  const loadTickets = async (page = 1) => {
+  const extractList = (res) => {
+    if (!res) return [];
+    if (Array.isArray(res)) return res;
+
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    if (Array.isArray(res?.data)) return res.data;
+
+    if (Array.isArray(res?.data?.items)) return res.data.items;
+
+    return [];
+  };
+
+  const loadTickets = async () => {
     try {
       setLoadingTickets(true);
       setErrorMsg("");
+
       const res = await fetchUserTickets({
-        page,
-        status:
-          status === "all"
-            ? undefined
-            : status === "open"
-            ? "OPEN"
-            : status === "review"
-            ? "IN_REVIEW"
-            : status === "progress"
-            ? "IN_PROGRESS"
-            : "RESOLVED",
+        page: 1,
+        perPage: 10,
+        status: status === "all" ? undefined : mapStatusParam(status),
       });
 
-      const pager = parsePaginator(res);
-      setTickets(pager.list);
-      setCurrentPage(pager.current_page);
-      setLastPage(pager.last_page);
+      const list = extractList(res);
+      setTickets(list.slice(0, 10));
     } catch (err) {
       console.error(err);
       setErrorMsg(
         err?.response?.data?.message || "Gagal mengambil data tiket dari server."
       );
       setTickets([]);
-      setCurrentPage(1);
-      setLastPage(5);
     } finally {
       setLoadingTickets(false);
     }
   };
 
   useEffect(() => {
-    loadTickets(1);
+    loadTickets();
   }, []);
 
   useEffect(() => {
-    loadTickets(1);
+    loadTickets();
   }, [status]);
 
   const filtered = tickets.filter((t) => {
@@ -192,8 +189,7 @@ export default function UserDashboard() {
     const id = String(t?.code_ticket ?? t?.id_ticket ?? "").toLowerCase();
     const title = String(t?.title ?? t?.subject ?? "").toLowerCase();
     const category = String(t?.category ?? t?.category_name ?? "").toLowerCase();
-    const matchText = id.includes(q) || title.includes(q) || category.includes(q);
-    return matchText;
+    return id.includes(q) || title.includes(q) || category.includes(q);
   });
 
   const stats = {
@@ -403,7 +399,7 @@ export default function UserDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((t) => {
+                  filtered.slice(0, 10).map((t) => {
                     const id = getId(t);
                     const title = getTitle(t);
                     const category = t?.category ?? t?.category_name ?? "-";
@@ -440,35 +436,6 @@ export default function UserDashboard() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div
-            className="pagination"
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginTop: "14px",
-              justifyContent: "center",
-            }}
-          >
-            {[1, 2, 3, 4, 5].map((num) => (
-              <button
-                key={num}
-                onClick={() => loadTickets(num)}
-                disabled={num > lastPage}
-                style={{
-                  padding: "8px 14px",
-                  backgroundColor: currentPage === num ? "#28a745" : "#fff",
-                  color: currentPage === num ? "#fff" : "#333",
-                  border: "1px solid #ddd",
-                  cursor: num > lastPage ? "not-allowed" : "pointer",
-                  borderRadius: "4px",
-                  opacity: num > lastPage ? 0.5 : 1,
-                }}
-              >
-                {num}
-              </button>
-            ))}
           </div>
         </section>
 
@@ -531,7 +498,9 @@ export default function UserDashboard() {
             <div className="modal-body">
               <div className="modal-row">
                 <span>Judul</span>
-                <strong>{selectedTicket.title ?? selectedTicket.subject ?? "-"}</strong>
+                <strong>
+                  {selectedTicket.title ?? selectedTicket.subject ?? "-"}
+                </strong>
               </div>
 
               <div className="modal-row">
@@ -542,7 +511,9 @@ export default function UserDashboard() {
               <div className="modal-row">
                 <span>Prioritas</span>
                 <strong>
-                  <span className={priorityClass(selectedTicket.priority ?? "LOW")}>
+                  <span
+                    className={priorityClass(selectedTicket.priority ?? "LOW")}
+                  >
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
                 </strong>

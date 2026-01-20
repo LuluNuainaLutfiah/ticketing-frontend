@@ -11,6 +11,7 @@ export default function AdminActivity() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [page, setPage] = useState(1);
+  const [pageCount, setPageCount] = useState(1);
   const perPage = 10;
 
   const getMessage = (a) =>
@@ -56,33 +57,37 @@ export default function AdminActivity() {
       setLoading(true);
       setErrorMsg("");
 
+      // backend sekarang return: { message, data: paginator }
       const res = await fetchAdminActivities({ page: p, perPage });
-      const paginator = res?.data ?? res;
+
+      const paginator = res?.data; // laravel paginate object
       const list = Array.isArray(paginator?.data) ? paginator.data : [];
 
       setItems(list);
+
+      // max 5 page juga sudah dibatasi dari backend, tapi aman set dari last_page
+      const last = Number(paginator?.last_page || 1);
+      setPageCount(Math.max(1, last));
     } catch (err) {
       console.error(err);
       setErrorMsg(
         err?.response?.data?.message || "Gagal mengambil aktivitas dari server."
       );
       setItems([]);
+      setPageCount(1);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load(1);
-  }, []);
-
-  useEffect(() => {
     load(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  const pageCount = useMemo(() => {
-    return Math.max(1, Math.ceil((items?.length ? page * perPage : page) / perPage));
-  }, [items, page]);
+  const disableNext = useMemo(() => {
+    return loading || page >= pageCount;
+  }, [loading, page, pageCount]);
 
   return (
     <div className="admin-page activity-layout">
@@ -157,7 +162,7 @@ export default function AdminActivity() {
                     </thead>
                     <tbody>
                       {items.map((a, idx) => (
-                        <tr key={a?.id_log ?? a?.id ?? idx}>
+                        <tr key={a?.id_log ?? a?.id ?? `${page}-${idx}`}>
                           <td className="td-muted">{getTime(a)}</td>
                           <td className="td-ticket">{getActor(a)}</td>
                           <td className="td-message">{getMessage(a)}</td>
@@ -177,19 +182,21 @@ export default function AdminActivity() {
                     Prev
                   </button>
 
-                  <div className="pg-info">Halaman {page}</div>
+                  <div className="pg-info">
+                    Halaman {page} / {pageCount}
+                  </div>
 
                   <button
                     className="pg-btn"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={loading || items.length < perPage}
+                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                    disabled={disableNext}
                   >
                     Next
                   </button>
                 </div>
 
                 <div className="pg-hint">
-                  Klik Next untuk halaman berikutnya (jika data masih ada).
+                  Maksimal 5 halaman (50 data terbaru).
                 </div>
               </>
             )}
