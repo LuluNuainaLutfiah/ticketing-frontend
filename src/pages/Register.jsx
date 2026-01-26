@@ -72,8 +72,19 @@ export default function RegisterPage() {
     setLoading(true);
     setErrorMsg("");
 
+    // validasi konfirmasi password
     if (form.password !== form.password_confirmation) {
       setErrorMsg("Kata sandi dan konfirmasi kata sandi tidak sama.");
+      setLoading(false);
+      return;
+    }
+
+    // validasi aturan password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(form.password)) {
+      setErrorMsg(
+        "Kata sandi harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, serta angka."
+      );
       setLoading(false);
       return;
     }
@@ -123,7 +134,8 @@ export default function RegisterPage() {
     }
   };
 
-  const idLabel = form.user_type === "mahasiswa" ? "NPM (Mahasiswa)" : "NIK (Dosen)";
+  const idLabel =
+    form.user_type === "mahasiswa" ? "NPM (Mahasiswa)" : "NIK (Dosen)";
 
   return (
     <div ref={pageRef} className="auth-page">
@@ -235,10 +247,17 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
               />
+              <div className="auth-helper-text">
+                Gunakan kata sandi minimal 8 karakter dengan kombinasi huruf
+                besar, huruf kecil, dan angka.
+              </div>
             </div>
 
             <div className="auth-form-group">
-              <label className="auth-label" htmlFor="password_confirmation">
+              <label
+                className="auth-label"
+                htmlFor="password_confirmation"
+              >
                 Konfirmasi Kata Sandi
               </label>
               <input

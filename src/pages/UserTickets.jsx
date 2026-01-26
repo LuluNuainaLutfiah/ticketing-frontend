@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-tickets.css";
 import TicketChatPanel from "./TicketChatPanel";
@@ -7,6 +7,7 @@ import { fetchUserTickets, fetchUserTicketDetail } from "../services/tickets";
 
 export default function UserTickets() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const user = useMemo(() => {
     try {
@@ -30,8 +31,6 @@ export default function UserTickets() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(5);
-
-  const closeModal = () => setSelectedTicket(null);
 
   const normalizeStatus = (s) => {
     const v = String(s || "").toUpperCase();
@@ -206,24 +205,46 @@ export default function UserTickets() {
   const openSidebar = () => setSidebarOpen(true);
   const closeSidebar = () => setSidebarOpen(false);
 
-  const openTicketModal = async (ticket) => {
-    setSelectedTicket(ticket);
+  const openTicketModal = async (ticketOrId) => {
+    const isId = typeof ticketOrId === "string" || typeof ticketOrId === "number";
+    const idTicket = isId ? ticketOrId : getRealId(ticketOrId);
 
-    const idTicket = getRealId(ticket);
     if (!idTicket) return;
+
+    if (!isId) setSelectedTicket(ticketOrId);
 
     try {
       setDetailLoading(true);
       const res = await fetchUserTicketDetail(idTicket);
       const detail = res?.data ?? res;
-      const merged = { ...ticket, ...detail };
+
+      const found = tickets.find((x) => String(getRealId(x)) === String(idTicket));
+      const merged = { ...(found || {}), ...(isId ? {} : ticketOrId), ...detail };
+
       setSelectedTicket(merged);
+
+      navigate("/user/tickets", { replace: true });
     } catch (err) {
       console.error(err);
     } finally {
       setDetailLoading(false);
     }
   };
+
+  const closeModal = () => {
+    setSelectedTicket(null);
+    navigate("/user/tickets", { replace: true });
+  };
+
+  useEffect(() => {
+    const openId = searchParams.get("open");
+    if (!openId) return;
+
+    const idStr = String(openId).trim();
+    if (!idStr) return;
+
+    openTicketModal(idStr);
+  }, [searchParams]);
 
   const attachments = getAttachments(selectedTicket)
     .map(normalizeAttachment)
@@ -279,13 +300,6 @@ export default function UserTickets() {
             <option value="progress">Sedang Diproses</option>
             <option value="done">Selesai</option>
           </select>
-
-          <button
-            className="ut-new-btn"
-            onClick={() => navigate("/user/tickets/create")}
-          >
-            + Buat Tiket Baru
-          </button>
         </section>
 
         {!!errorMsg && <div className="ut-error">{errorMsg}</div>}

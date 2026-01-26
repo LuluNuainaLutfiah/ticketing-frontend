@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-faq.css";
 
-export default function UserFAQ() {
+export default function UserFAQ({ open = false, onClose, mode = "page" }) {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
 
@@ -26,12 +26,77 @@ export default function UserFAQ() {
         a: "Tergantung antrean dan prioritas. Tiket berprioritas HIGH biasanya diproses lebih cepat.",
       },
     ],
-    []
+    [],
   );
 
-  const filtered = faqs.filter((x) =>
-    (x.q + " " + x.a).toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return faqs;
+    return faqs.filter((x) => (x.q + " " + x.a).toLowerCase().includes(s));
+  }, [q, faqs]);
+
+  useEffect(() => {
+    if (mode !== "modal") return;
+    if (!open) return;
+
+    setQ("");
+
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, open, onClose]);
+
+  if (mode === "modal") {
+    if (!open) return null;
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-card faq-modal"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button className="modal-close" onClick={onClose} aria-label="Tutup">
+            ✕
+          </button>
+
+          <div className="modal-title">FAQ</div>
+          <div className="modal-sub">Jawaban cepat untuk pertanyaan umum.</div>
+
+          <div className="faq-modal-search">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cari pertanyaan..."
+            />
+          </div>
+
+          <div className="faq-modal-list">
+            {filtered.length === 0 ? (
+              <div className="faq-empty">Tidak ada hasil.</div>
+            ) : (
+              filtered.map((item, idx) => (
+                <details className="faq-item fancy" key={idx}>
+                  <summary className="faq-q fancy">
+                    <span className="faq-q-left">
+                      <span className="faq-q-icon">❓</span>
+                      <span className="faq-q-text">{item.q}</span>
+                    </span>
+                    <span className="faq-q-right">
+                      <span className="faq-badge">FAQ</span>
+                      <span className="faq-chevron">▾</span>
+                    </span>
+                  </summary>
+                  <div className="faq-a fancy">{item.a}</div>
+                </details>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="user-page">
@@ -67,9 +132,7 @@ export default function UserFAQ() {
         </div>
 
         <div className="faq-back">
-          <button onClick={() => navigate("/user")}>
-            ← Kembali ke Menu
-          </button>
+          <button onClick={() => navigate("/user")}>← Kembali ke Menu</button>
         </div>
       </main>
     </div>

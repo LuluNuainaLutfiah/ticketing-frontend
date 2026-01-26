@@ -5,6 +5,9 @@ import UserTopbar from "../components/user/UserTopbar";
 import "../styles/user-dashboard.css";
 import { fetchUserTickets, fetchUserTicketDetail } from "../services/tickets";
 import TicketChatPanel from "./TicketChatPanel";
+import UserFAQ from "./UserFAQ";
+import UserServiceHours from "./UserServicesHours";
+import UserHowItWorks from "./UserHowItWorks";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
@@ -29,6 +32,10 @@ export default function UserDashboard() {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [openFaq, setOpenFaq] = useState(false);
+  const [openServiceHours, setOpenServiceHours] = useState(false);
+  const [openHowItWorks, setOpenHowItWorks] = useState(false);
 
   const closeModal = () => setSelectedTicket(null);
 
@@ -195,8 +202,7 @@ export default function UserDashboard() {
   const stats = {
     open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
     review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress")
-      .length,
+    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
     done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
   };
 
@@ -266,8 +272,12 @@ export default function UserDashboard() {
   };
 
   const onClickNotifItem = (item) => {
-    openTicketModal(item.ticket);
+    const idTicket = getRealId(item.ticket);
     setNotifOpen(false);
+
+    if (!idTicket) return;
+
+    navigate(`/user/tickets?open=${encodeURIComponent(idTicket)}`);
   };
 
   const openSidebar = () => setSidebarOpen(true);
@@ -444,10 +454,7 @@ export default function UserDashboard() {
             <div className="info-icon info-blue">💬</div>
             <div className="info-title">FAQ</div>
             <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
-            <button
-              className="info-link-btn"
-              onClick={() => navigate("/user/faq")}
-            >
+            <button className="info-link-btn" onClick={() => setOpenFaq(true)}>
               Lihat FAQ →
             </button>
           </div>
@@ -458,7 +465,7 @@ export default function UserDashboard() {
             <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
             <button
               className="info-link-btn"
-              onClick={() => navigate("/user/service-hours")}
+              onClick={() => setOpenServiceHours(true)}
             >
               Lihat Jadwal →
             </button>
@@ -472,13 +479,25 @@ export default function UserDashboard() {
             </div>
             <button
               className="info-link-btn"
-              onClick={() => navigate("/user/how-it-works")}
+              onClick={() => setOpenHowItWorks(true)}
             >
               Lihat Panduan →
             </button>
           </div>
         </section>
       </main>
+
+      <UserFAQ mode="modal" open={openFaq} onClose={() => setOpenFaq(false)} />
+      <UserServiceHours
+        mode="modal"
+        open={openServiceHours}
+        onClose={() => setOpenServiceHours(false)}
+      />
+      <UserHowItWorks
+        mode="modal"
+        open={openHowItWorks}
+        onClose={() => setOpenHowItWorks(false)}
+      />
 
       {selectedTicket && (
         <div className="modal-overlay" onClick={closeModal}>
