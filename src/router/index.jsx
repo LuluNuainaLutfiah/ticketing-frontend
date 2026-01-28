@@ -5,6 +5,9 @@ import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 
+import ForgotPassword from "../pages/ForgotPassword"; 
+import ResetPassword from "../pages/ResetPassword";
+
 import AdminDashboard from "../pages/AdminDashboard";
 import AdminTickets from "../pages/AdminTickets";
 import AdminActivity from "../pages/AdminActivity";
@@ -13,6 +16,7 @@ import AdminDetailTicket from "../pages/AdminDetailTicket";
 import UserDashboard from "../pages/UserDashboard";
 import UserTickets from "../pages/UserTickets";
 import UserTicketDetail from "../pages/UserTicketDetail";
+
 import UserCreateTicket from "../pages/UserCreateTickets";
 import UserProfile from "../pages/UserProfile";
 import UserFAQ from "../pages/UserFAQ";
@@ -25,9 +29,14 @@ export default function AppRouter() {
       <Routes>
         <Route element={<App />}>
           <Route index element={<Home />} />
+
           {/* AUTH */}
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+
+          {/* FORGOT / RESET */}
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
 
           {/* ADMIN */}
           <Route path="admin" element={<AdminDashboard />} />

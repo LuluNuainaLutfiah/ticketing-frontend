@@ -93,7 +93,7 @@ export default function LoginPage() {
     } catch (err) {
       setErrorMsg(
         err.response?.data?.message ||
-          "Login gagal. Silakan periksa email dan kata sandi Anda."
+          "Login gagal. Silakan periksa email dan kata sandi Anda.",
       );
     } finally {
       setLoading(false);
@@ -166,13 +166,9 @@ export default function LoginPage() {
                 Ingat saya
               </label>
 
-              <button
-                type="button"
-                className="auth-link-small"
-                onClick={() => alert("Fitur lupa kata sandi belum tersedia")}
-              >
+              <Link to="/forgot-password" className="auth-link-small">
                 Lupa kata sandi?
-              </button>
+              </Link>
             </div>
 
             <button className="auth-btn" type="submit" disabled={loading}>
