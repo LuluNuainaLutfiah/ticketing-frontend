@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import "../styles/admin-tickets.css";
 import {
@@ -22,11 +23,19 @@ export default function AdminTickets() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
 
-  const closeModal = () => setSelectedTicket(null);
+  const [params, setParams] = useSearchParams();
+  const openCode = params.get("open");
+
+  const closeModal = () => {
+    setSelectedTicket(null);
+    setParams((p) => {
+      p.delete("open");
+      return p;
+    });
+  };
 
   const normalizeStatus = (s) => {
     const val = String(s || "").toUpperCase();
@@ -36,19 +45,20 @@ export default function AdminTickets() {
     return "open";
   };
 
-  const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
+  const getRealId = (t) =>
+    t?.id_ticket ?? t?.id ?? t?.ticket_id ?? t?.code_ticket ?? null;
 
-  // parser paginator backend: { message, data: { data: [...] , current_page, last_page } }
+  const getId = (t) => t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
+  const getTitle = (t) => t?.title ?? "-";
+  const getCategory = (t) => t?.category ?? "-";
+  const getPriority = (t) => String(t?.priority ?? "LOW");
+
   const parsePaginator = (res) => {
-    // res dari service = res.data axios
-    // bentuk: { message, data: { current_page, data: [], last_page } }
     const payload = res || {};
     const pager = payload?.data || {};
-
     const list = Array.isArray(pager?.data) ? pager.data : [];
     const cp = Number(pager?.current_page ?? 1);
     const lp = Number(pager?.last_page ?? 1);
-
     return { list, current_page: cp, last_page: lp };
   };
 
@@ -68,7 +78,7 @@ export default function AdminTickets() {
       setTickets([]);
       setErrorMsg(
         err?.response?.data?.message ||
-          "Gagal mengambil data tiket dari server.",
+          "Gagal mengambil data tiket dari server."
       );
     } finally {
       setLoading(false);
@@ -78,21 +88,6 @@ export default function AdminTickets() {
   useEffect(() => {
     loadTickets(1);
   }, []);
-
-  const counts = useMemo(() => {
-    const normalized = tickets.map((t) => normalizeStatus(t.status));
-    return {
-      open: normalized.filter((s) => s === "open").length,
-      in_review: normalized.filter((s) => s === "in_review").length,
-      in_progress: normalized.filter((s) => s === "in_progress").length,
-      closed: normalized.filter((s) => s === "closed").length,
-    };
-  }, [tickets]);
-
-  const getId = (t) => t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
-  const getTitle = (t) => t?.title ?? "-";
-  const getCategory = (t) => t?.category ?? "-";
-  const getPriority = (t) => String(t?.priority ?? "LOW");
 
   const getCreated = (t) => {
     const raw = t?.created_at ?? t?.createdAt ?? t?.date;
@@ -122,123 +117,38 @@ export default function AdminTickets() {
     });
   };
 
-  const filteredTickets = useMemo(() => {
-    const q = search.toLowerCase();
+  const openTicketModal = async (ticketOrId) => {
+    const isId =
+      typeof ticketOrId === "string" || typeof ticketOrId === "number";
 
-    return tickets
-      .map((t) => ({ ...t, _status: normalizeStatus(t.status) }))
-      .filter((t) => {
-        const okStatus =
-          statusFilter === "all" ? true : t._status === statusFilter;
+    const openVal = isId ? String(ticketOrId).trim() : null;
 
-        const id = String(getId(t)).toLowerCase();
-        const title = String(getTitle(t)).toLowerCase();
-        const category = String(getCategory(t)).toLowerCase();
-        const priority = String(getPriority(t)).toLowerCase();
+    const found = isId
+      ? tickets.find(
+          (x) =>
+            String(getId(x)) === openVal || String(getRealId(x)) === openVal
+        )
+      : ticketOrId;
 
-        const okSearch =
-          id.includes(q) ||
-          title.includes(q) ||
-          category.includes(q) ||
-          priority.includes(q);
+    if (found) setSelectedTicket(found);
 
-        return okStatus && okSearch;
-      });
-  }, [tickets, statusFilter, search]);
-
-  const priorityClass = (p) => {
-    const val = String(p || "").toLowerCase();
-    if (val === "high") return "priority-badge high";
-    if (val === "medium") return "priority-badge medium";
-    return "priority-badge low";
-  };
-
-  const statusClass = (s) => {
-    if (s === "open") return "status-badge open";
-    if (s === "in_review") return "status-badge in-review";
-    if (s === "in_progress") return "status-badge in-progress";
-    if (s === "closed") return "status-badge closed";
-    return "status-badge";
-  };
-
-  const statusLabel = (s) => {
-    if (s === "in_review") return "Ditinjau";
-    if (s === "in_progress") return "Diproses";
-    if (s === "closed") return "Selesai";
-    return "Terbuka";
-  };
-
-  // Lampiran (tetap punyamu)
-  const getAttachments = (t) => {
-    if (!t) return [];
-    const allFiles = Array.isArray(t.attachments)
-      ? t.attachments
-      : Array.isArray(t.files)
-        ? t.files
-        : [];
-    return allFiles.filter((file) => !file.id_message);
-  };
-
-  const normalizeAttachment = (a) => {
-    if (!a) return null;
-
-    if (typeof a === "string") {
-      return { url: a, name: a.split("/").pop() || "Lampiran" };
-    }
-
-    const url =
-      a.url ||
-      a.file_url ||
-      a.attachment_url ||
-      a.path ||
-      a.file_path ||
-      a.storage_path;
-
-    const name =
-      a.name ||
-      a.original_name ||
-      a.filename ||
-      a.file_name ||
-      (url ? url.split("/").pop() : "Lampiran");
-
-    return { url: url || "", name };
-  };
-
-  const buildStorageUrlIfNeeded = (urlOrPath) => {
-    if (!urlOrPath) return "";
-    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
-
-    const base =
-      import.meta.env.VITE_API_URL ||
-      import.meta.env.VITE_API_BASE_URL ||
-      "http://127.0.0.1:8000/api";
-    const root = base.replace(/\/api\/?$/, "");
-    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
-
-    return cleanPath.startsWith("storage/")
-      ? `${root}/${cleanPath}`
-      : `${root}/storage/${cleanPath}`;
-  };
-
-  const openTicketModal = async (ticket) => {
-    setSelectedTicket(ticket);
-
-    const idTicket = getRealId(ticket);
+    const idTicket = isId ? getRealId(found) || openVal : getRealId(found);
     if (!idTicket) return;
 
     try {
       setDetailLoading(true);
-      const res = await fetchAdminTicketDetail(idTicket);
 
-      // backend show(): { message, data: {...} }
+      const res = await fetchAdminTicketDetail(idTicket);
       const payload = res?.data ?? res;
       const detail = payload?.data ?? payload;
 
-      const merged = { ...ticket, ...detail };
+      const merged = { ...(found || {}), ...detail };
       setSelectedTicket(merged);
 
       setTickets((prev) =>
-        prev.map((t) => (getRealId(t) === idTicket ? merged : t)),
+        prev.map((t) =>
+          String(getRealId(t)) === String(getRealId(merged)) ? merged : t
+        )
       );
     } catch (err) {
       console.error(err);
@@ -246,6 +156,21 @@ export default function AdminTickets() {
       setDetailLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!openCode) return;
+    if (loading) return;
+
+    const val = String(openCode).trim();
+    if (!val) return;
+
+    openTicketModal(val);
+
+    setParams((p) => {
+      p.delete("open");
+      return p;
+    });
+  }, [openCode, loading, tickets]);
 
   const toggleChat = (ticket) => {
     setSelectedTicket((prev) => {
@@ -266,13 +191,11 @@ export default function AdminTickets() {
       setUpdatingId(idTicket);
 
       const result = await adminUpdateTicketStatus(idTicket, newStatus);
-
-      // backend flow return: { ticket: {...} } atau { ticket, chat }
       const updated = result?.ticket ?? result?.data ?? result;
       const merged = { ...ticket, ...updated };
 
       setTickets((prev) =>
-        prev.map((t) => (getRealId(t) === idTicket ? merged : t)),
+        prev.map((t) => (getRealId(t) === idTicket ? merged : t))
       );
 
       setSelectedTicket((prev) => {
@@ -286,7 +209,7 @@ export default function AdminTickets() {
       alert(
         err?.response?.data?.message ||
           err?.message ||
-          "Gagal mengubah status tiket.",
+          "Gagal mengubah status tiket."
       );
       return null;
     } finally {
@@ -326,7 +249,6 @@ export default function AdminTickets() {
     await handleUpdateStatus(ticket, "RESOLVED");
   };
 
-  // NOTE: reopen butuh endpoint backend khusus, sementara nonaktifkan agar tidak bikin error
   const handleReopen = async () => {
     alert("Reopen ke OPEN belum ada endpoint-nya di backend.");
   };
@@ -413,11 +335,118 @@ export default function AdminTickets() {
     return "-";
   };
 
+  const counts = useMemo(() => {
+    const normalized = tickets.map((t) => normalizeStatus(t.status));
+    return {
+      open: normalized.filter((s) => s === "open").length,
+      in_review: normalized.filter((s) => s === "in_review").length,
+      in_progress: normalized.filter((s) => s === "in_progress").length,
+      closed: normalized.filter((s) => s === "closed").length,
+    };
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    const q = search.toLowerCase();
+
+    return tickets
+      .map((t) => ({ ...t, _status: normalizeStatus(t.status) }))
+      .filter((t) => {
+        const okStatus =
+          statusFilter === "all" ? true : t._status === statusFilter;
+
+        const id = String(getId(t)).toLowerCase();
+        const title = String(getTitle(t)).toLowerCase();
+        const category = String(getCategory(t)).toLowerCase();
+        const priority = String(getPriority(t)).toLowerCase();
+
+        const okSearch =
+          id.includes(q) ||
+          title.includes(q) ||
+          category.includes(q) ||
+          priority.includes(q);
+
+        return okStatus && okSearch;
+      });
+  }, [tickets, statusFilter, search]);
+
+  const priorityClass = (p) => {
+    const val = String(p || "").toLowerCase();
+    if (val === "high") return "priority-badge high";
+    if (val === "medium") return "priority-badge medium";
+    return "priority-badge low";
+  };
+
+  const statusClass = (s) => {
+    if (s === "open") return "status-badge open";
+    if (s === "in_review") return "status-badge in-review";
+    if (s === "in_progress") return "status-badge in-progress";
+    if (s === "closed") return "status-badge closed";
+    return "status-badge";
+  };
+
+  const statusLabel = (s) => {
+    if (s === "in_review") return "Ditinjau";
+    if (s === "in_progress") return "Diproses";
+    if (s === "closed") return "Selesai";
+    return "Terbuka";
+  };
+
+  const getAttachments = (t) => {
+    if (!t) return [];
+    const allFiles = Array.isArray(t.attachments)
+      ? t.attachments
+      : Array.isArray(t.files)
+      ? t.files
+      : [];
+    return allFiles.filter((file) => !file.id_message);
+  };
+
+  const normalizeAttachment = (a) => {
+    if (!a) return null;
+
+    if (typeof a === "string") {
+      return { url: a, name: a.split("/").pop() || "Lampiran" };
+    }
+
+    const url =
+      a.url ||
+      a.file_url ||
+      a.attachment_url ||
+      a.path ||
+      a.file_path ||
+      a.storage_path;
+
+    const name =
+      a.name ||
+      a.original_name ||
+      a.filename ||
+      a.file_name ||
+      (url ? url.split("/").pop() : "Lampiran");
+
+    return { url: url || "", name };
+  };
+
+  const buildStorageUrlIfNeeded = (urlOrPath) => {
+    if (!urlOrPath) return "";
+    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
+
+    const base =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000/api";
+
+    const root = base.replace(/\/api\/?$/, "");
+    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
+
+    return cleanPath.startsWith("storage/")
+      ? `${root}/${cleanPath}`
+      : `${root}/storage/${cleanPath}`;
+  };
+
   const attachments = getAttachments(selectedTicket)
     .map(normalizeAttachment)
     .filter(Boolean);
 
-  // Pagination UI: selalu 1..5 (sesuai requirement), tapi disable kalau lastPage kecil
   const pageButtons = [1, 2, 3, 4, 5];
   const maxPage = Math.min(5, Math.max(1, lastPage));
 
@@ -590,7 +619,6 @@ export default function AdminTickets() {
                   </table>
                 </div>
 
-                {/* Pagination 1..5 */}
                 <div
                   className="pagination"
                   style={{
@@ -663,11 +691,7 @@ export default function AdminTickets() {
               <div className="modal-row">
                 <span>Status</span>
                 <strong>
-                  <span
-                    className={statusClass(
-                      normalizeStatus(selectedTicket.status),
-                    )}
-                  >
+                  <span className={statusClass(normalizeStatus(selectedTicket.status))}>
                     {statusLabel(normalizeStatus(selectedTicket.status))}
                   </span>
                 </strong>

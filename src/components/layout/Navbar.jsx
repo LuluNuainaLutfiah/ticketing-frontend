@@ -14,12 +14,12 @@ export default function Navbar() {
           <div className="navbar-logo" />
           <img src={logoUika} alt="Logo UIKA" className="brand-logo" />
           <div className="navbar-title">
-            <span className="navbar-title-main">
+            <div className="navbar-title-main">
               Universitas Ibn Khaldun – IT Helpdesk
-            </span>
-            <span className="navbar-title-sub">
+            </div>
+            <div className="navbar-title-sub">
               Portal Dukungan Teknis
-            </span>
+            </div>
           </div>
         </div>
       </div>

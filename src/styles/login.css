@@ -16,15 +16,21 @@
   position: absolute;
   inset: -60px;
   background:
-    radial-gradient(700px 520px at var(--mx) var(--my),
+    radial-gradient(
+      700px 520px at var(--mx) var(--my),
       rgba(22, 163, 74, 0.22),
-      transparent 60%),
-    radial-gradient(900px 600px at calc(var(--mx) + 18%) calc(var(--my) + 10%),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at calc(var(--mx) + 18%) calc(var(--my) + 10%),
       rgba(37, 99, 235, 0.16),
-      transparent 60%),
-    radial-gradient(700px 520px at calc(var(--mx) - 22%) calc(var(--my) + 18%),
+      transparent 60%
+    ),
+    radial-gradient(
+      700px 520px at calc(var(--mx) - 22%) calc(var(--my) + 18%),
       rgba(168, 85, 247, 0.12),
-      transparent 60%);
+      transparent 60%
+    );
   filter: blur(14px);
   pointer-events: none;
   z-index: 0;
@@ -35,7 +41,7 @@
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.14'/%3E%3C/svg%3E");
-  opacity: 0.10;
+  opacity: 0.1;
   pointer-events: none;
   z-index: 0;
 }
@@ -79,7 +85,9 @@
   background: rgba(255, 255, 255, 0.85);
   color: #111827;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
   z-index: 10;
 }
 
@@ -129,7 +137,9 @@
   border: 1px solid #d1d5db;
   font-size: 12px;
   background: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .auth-input:focus {
@@ -181,7 +191,10 @@
   font-weight: 700;
   letter-spacing: 0.5px;
   margin-bottom: 10px;
-  transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    opacity 0.12s ease;
 }
 
 .auth-btn:hover {
@@ -196,6 +209,8 @@
 }
 
 .auth-bottom-box {
+  display: inline-block;
+  width: 100%;
   margin-top: 4px;
   background-color: #f3f4f6;
   border-radius: 12px;
@@ -203,9 +218,15 @@
   font-size: 11px;
   color: #4b5563;
   text-align: center;
+  text-decoration: none;
 }
 
 .auth-bottom-box a {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+}
+.auth-bottom-box span {
   color: #16a34a;
   text-decoration: none;
   font-weight: 700;
@@ -229,7 +250,9 @@
   background-position:
     calc(100% - 18px) 52%,
     calc(100% - 12px) 52%;
-  background-size: 6px 6px, 6px 6px;
+  background-size:
+    6px 6px,
+    6px 6px;
   background-repeat: no-repeat;
 }
 
@@ -259,8 +282,6 @@
   border: 1px solid rgba(239, 68, 68, 0.35);
   color: #7f1d1d;
 }
-
-
 
 @media (max-width: 600px) {
   .auth-shell {

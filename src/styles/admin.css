@@ -100,12 +100,13 @@
 }
 
 .admin-logout {
+  color: #fff;
   margin-top: auto;
   padding: 8px 10px;
   border-radius: 10px;
   font-size: 12px;
   border: 1px solid #eee;
-  background: #fff;
+  background: #9c0000;
   cursor: pointer;
 }
 

@@ -1,12 +1,11 @@
 import { useEffect, useRef } from "react";
+import { Bell, Search, Filter, ChevronDown } from "lucide-react";
 
 export default function UserTopbar({
   query,
   setQuery,
   status,
   setStatus,
-
-  // props notif (opsional, tapi dipakai kalau kamu mau notif)
   notifOpen,
   setNotifOpen,
   notifCount = 0,
@@ -33,22 +32,21 @@ export default function UserTopbar({
       <div>
         <div className="user-topbar-title">Dashboard</div>
         <div className="user-topbar-sub">
-          Selamat datang kembali! Berikut ringkasan tiket Anda.
+          Ringkasan tiket dan aktivitas terbaru Anda.
         </div>
       </div>
 
       <div className="user-topbar-right">
-        {/* NOTIF BELL */}
+
         {setNotifOpen && (
           <div className="user-notif" ref={notifRef}>
             <button
               type="button"
               className="user-notif-btn"
               onClick={() => setNotifOpen(!notifOpen)}
-              aria-label="Notifikasi tiket selesai"
-              title="Notifikasi tiket selesai"
+              aria-label="Notifikasi"
             >
-              🔔
+              <Bell size={18} strokeWidth={2} />
               {notifCount > 0 && (
                 <span className="user-notif-badge">
                   {notifCount > 99 ? "99+" : notifCount}
@@ -61,12 +59,14 @@ export default function UserTopbar({
                 <div className="user-notif-head">
                   <div className="user-notif-title">Tiket Selesai</div>
                   <div className="user-notif-sub">
-                    {notifCount} tiket sudah selesai
+                    {notifCount} tiket telah diselesaikan
                   </div>
                 </div>
 
                 {notifItems.length === 0 ? (
-                  <div className="user-notif-empty">Belum ada tiket selesai.</div>
+                  <div className="user-notif-empty">
+                    Belum ada tiket selesai.
+                  </div>
                 ) : (
                   <div className="user-notif-list">
                     {notifItems.map((it) => (
@@ -74,7 +74,9 @@ export default function UserTopbar({
                         key={it.id}
                         type="button"
                         className="user-notif-item"
-                        onClick={() => onClickNotifItem && onClickNotifItem(it)}
+                        onClick={() =>
+                          onClickNotifItem && onClickNotifItem(it)
+                        }
                       >
                         <div className="user-notif-item-title">
                           <strong>{it.id}</strong> — {it.title}
@@ -93,25 +95,29 @@ export default function UserTopbar({
           </div>
         )}
 
-        {/* SEARCH */}
-        <input
-          className="user-search"
-          placeholder="Cari tiket..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="user-search-wrap">
+          <input
+            className="user-search"
+            placeholder="Cari tiket..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
 
-        {/* FILTER */}
-        <select
-          className="user-filter"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="all">Semua Status</option>
-          <option value="open">Open</option>
-          <option value="progress">Dalam Proses</option>
-          <option value="done">Selesai</option>
-        </select>
+        <div className="user-filter-wrap">
+          <Filter size={16} strokeWidth={2} className="user-filter-icon" />
+          <select
+            className="user-filter"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="all">Semua Status</option>
+            <option value="open">Open</option>
+            <option value="progress">Dalam Proses</option>
+            <option value="done">Selesai</option>
+          </select>
+        </div>
+
       </div>
     </div>
   );

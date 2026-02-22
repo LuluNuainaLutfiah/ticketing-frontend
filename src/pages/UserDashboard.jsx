@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Inbox,
+  Timer,
+  CheckCircle2,
+  Ticket,
+  MessageCircleQuestion,
+  CalendarClock,
+  BookOpenText,
+} from "lucide-react";
 import UserSidebar from "../components/user/UserSidebar";
 import UserTopbar from "../components/user/UserTopbar";
 import "../styles/user-dashboard.css";
@@ -9,22 +18,159 @@ import UserFAQ from "./UserFAQ";
 import UserServiceHours from "./UserServicesHours";
 import UserHowItWorks from "./UserHowItWorks";
 
+const TZ = "Asia/Jakarta";
+
+function safeParseUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user")) || {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeStatus(value) {
+  const v = String(value || "").toUpperCase();
+  if (v === "IN_REVIEW") return "review";
+  if (v === "IN_PROGRESS") return "progress";
+  if (v === "RESOLVED" || v === "CLOSED") return "done";
+  return "open";
+}
+
+function statusLabel(value) {
+  const st = normalizeStatus(value);
+  if (st === "review") return "Ditinjau";
+  if (st === "progress") return "Sedang Diproses";
+  if (st === "done") return "Selesai";
+  return "Terbuka";
+}
+
+function mapStatusParam(st) {
+  if (st === "open") return "OPEN";
+  if (st === "review") return "IN_REVIEW";
+  if (st === "progress") return "IN_PROGRESS";
+  if (st === "done") return "RESOLVED";
+  return undefined;
+}
+
+function extractList(res) {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.items)) return res.data.items;
+  return [];
+}
+
+function ticketId(t) {
+  return t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
+}
+
+function ticketTitle(t) {
+  return t?.title ?? t?.subject ?? "-";
+}
+
+function ticketRealId(t) {
+  return t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
+}
+
+function formatJakarta(raw) {
+  if (!raw) return "-";
+  let s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
+  const hasTz = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
+  if (!hasTz) s += "Z";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return String(raw);
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
+function createdLabel(t) {
+  return formatJakarta(t?.created_at ?? t?.createdAt ?? t?.date);
+}
+
+function resolvedLabel(t) {
+  return formatJakarta(t?.resolved_at ?? t?.resolution_date ?? t?.closed_at);
+}
+
+function updatedLabel(t) {
+  return formatJakarta(t?.updated_at ?? t?.updatedAt ?? t?.last_update);
+}
+
+function getAttachments(t) {
+  if (!t) return [];
+  const list = Array.isArray(t.attachments)
+    ? t.attachments
+    : Array.isArray(t.files)
+    ? t.files
+    : [];
+  return list.filter((f) => !f?.id_message);
+}
+
+function normalizeAttachment(a) {
+  if (!a) return null;
+  if (typeof a === "string") {
+    const name = a.split("/").pop() || "Lampiran";
+    return { url: a, name };
+  }
+  const url =
+    a.url ||
+    a.file_url ||
+    a.attachment_url ||
+    a.path ||
+    a.file_path ||
+    a.storage_path ||
+    "";
+  const name =
+    a.name ||
+    a.original_name ||
+    a.filename ||
+    a.file_name ||
+    (url ? url.split("/").pop() : "Lampiran");
+  return { url, name };
+}
+
+function buildStorageUrlIfNeeded(urlOrPath) {
+  if (!urlOrPath) return "";
+  if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
+
+  const base =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://127.0.0.1:8000/api";
+
+  const root = base.replace(/\/api\/?$/, "");
+  const cleanPath = String(urlOrPath).replace(/^\/+/, "");
+
+  return cleanPath.startsWith("storage/")
+    ? `${root}/${cleanPath}`
+    : `${root}/storage/${cleanPath}`;
+}
+
+function pillPriority(priority) {
+  return `pill pri-${String(priority || "").toLowerCase()}`;
+}
+
+function pillStatus(st) {
+  return `pill st-${normalizeStatus(st)}`;
+}
+
 export default function UserDashboard() {
   const navigate = useNavigate();
-
-  const user = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user")) || {};
-    } catch {
-      return {};
-    }
-  }, []);
+  const user = useMemo(() => safeParseUser(), []);
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
 
   const [tickets, setTickets] = useState([]);
-  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -39,203 +185,85 @@ export default function UserDashboard() {
 
   const closeModal = () => setSelectedTicket(null);
 
-  const normalizeStatus = (s) => {
-    const v = String(s || "").toUpperCase();
-    if (v === "IN_REVIEW") return "review";
-    if (v === "IN_PROGRESS") return "progress";
-    if (v === "RESOLVED" || v === "CLOSED") return "done";
-    return "open";
-  };
+  const loadTickets = useCallback(
+    async ({ silent = false } = {}) => {
+      try {
+        if (!silent && !hasLoadedOnce) setErrorMsg("");
+        const res = await fetchUserTickets({
+          page: 1,
+          perPage: 10,
+          status: status === "all" ? undefined : mapStatusParam(status),
+        });
 
-  const getId = (t) => t?.code_ticket ?? t?.id_ticket ?? t?.id ?? "-";
-  const getTitle = (t) => t?.title ?? t?.subject ?? "-";
-
-  const formatJakarta = (raw) => {
-    if (!raw) return "-";
-    let s = String(raw).trim();
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(" ", "T");
-    const hasTimezone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s);
-    if (!hasTimezone) s += "Z";
-    const d = new Date(s);
-    if (Number.isNaN(d.getTime())) return String(raw);
-
-    return new Intl.DateTimeFormat("id-ID", {
-      timeZone: "Asia/Jakarta",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(d);
-  };
-
-  const createdLabel = (t) => {
-    const raw = t?.created_at ?? t?.createdAt ?? t?.date;
-    return formatJakarta(raw);
-  };
-
-  const resolvedLabel = (t) => {
-    const raw = t?.resolved_at ?? t?.resolution_date ?? t?.closed_at;
-    return formatJakarta(raw);
-  };
-
-  const updatedLabel = (t) => {
-    const raw = t?.updated_at ?? t?.updatedAt ?? t?.last_update;
-    return formatJakarta(raw);
-  };
-
-  const getRealId = (t) => t?.id_ticket ?? t?.id ?? t?.ticket_id ?? null;
-
-  const getAttachments = (t) => {
-    if (!t) return [];
-    const allFiles = Array.isArray(t.attachments)
-      ? t.attachments
-      : Array.isArray(t.files)
-      ? t.files
-      : [];
-    return allFiles.filter((file) => !file.id_message);
-  };
-
-  const normalizeAttachment = (a) => {
-    if (!a) return null;
-
-    if (typeof a === "string") {
-      return { url: a, name: a.split("/").pop() || "Lampiran" };
-    }
-
-    const url =
-      a.url ||
-      a.file_url ||
-      a.attachment_url ||
-      a.path ||
-      a.file_path ||
-      a.storage_path;
-
-    const name =
-      a.name ||
-      a.original_name ||
-      a.filename ||
-      a.file_name ||
-      (url ? url.split("/").pop() : "Lampiran");
-
-    return { url: url || "", name };
-  };
-
-  const buildStorageUrlIfNeeded = (urlOrPath) => {
-    if (!urlOrPath) return "";
-    if (/^https?:\/\//i.test(urlOrPath)) return urlOrPath;
-
-    const base =
-      import.meta.env.VITE_API_URL ||
-      import.meta.env.VITE_API_BASE_URL ||
-      "http://127.0.0.1:8000/api";
-
-    const root = base.replace(/\/api\/?$/, "");
-    const cleanPath = String(urlOrPath).replace(/^\/+/, "");
-
-    return cleanPath.startsWith("storage/")
-      ? `${root}/${cleanPath}`
-      : `${root}/storage/${cleanPath}`;
-  };
-
-  const mapStatusParam = (st) => {
-    if (st === "open") return "OPEN";
-    if (st === "review") return "IN_REVIEW";
-    if (st === "progress") return "IN_PROGRESS";
-    if (st === "done") return "RESOLVED";
-    return undefined;
-  };
-
-  const extractList = (res) => {
-    if (!res) return [];
-    if (Array.isArray(res)) return res;
-
-    if (Array.isArray(res?.data?.data)) return res.data.data;
-    if (Array.isArray(res?.data)) return res.data;
-
-    if (Array.isArray(res?.data?.items)) return res.data.items;
-
-    return [];
-  };
-
-  const loadTickets = async () => {
-    try {
-      setLoadingTickets(true);
-      setErrorMsg("");
-
-      const res = await fetchUserTickets({
-        page: 1,
-        perPage: 10,
-        status: status === "all" ? undefined : mapStatusParam(status),
-      });
-
-      const list = extractList(res);
-      setTickets(list.slice(0, 10));
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(
-        err?.response?.data?.message || "Gagal mengambil data tiket dari server."
-      );
-      setTickets([]);
-    } finally {
-      setLoadingTickets(false);
-    }
-  };
+        const list = extractList(res).slice(0, 10);
+        setTickets(list);
+        setErrorMsg("");
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message || "Gagal mengambil data tiket dari server.";
+        if (!silent || !hasLoadedOnce) setErrorMsg(msg);
+      } finally {
+        setHasLoadedOnce(true);
+      }
+    },
+    [status, hasLoadedOnce]
+  );
 
   useEffect(() => {
-    loadTickets();
+    loadTickets({ silent: false });
   }, []);
 
   useEffect(() => {
-    loadTickets();
+    if (!hasLoadedOnce) return;
+    loadTickets({ silent: true });
   }, [status]);
 
-  const filtered = tickets.filter((t) => {
-    const q = query.toLowerCase();
-    const id = String(t?.code_ticket ?? t?.id_ticket ?? "").toLowerCase();
-    const title = String(t?.title ?? t?.subject ?? "").toLowerCase();
-    const category = String(t?.category ?? t?.category_name ?? "").toLowerCase();
-    return id.includes(q) || title.includes(q) || category.includes(q);
-  });
+  const pollRef = useRef(null);
+  useEffect(() => {
+    if (!hasLoadedOnce) return;
 
-  const stats = {
-    open: tickets.filter((t) => normalizeStatus(t.status) === "open").length,
-    review: tickets.filter((t) => normalizeStatus(t.status) === "review").length,
-    progress: tickets.filter((t) => normalizeStatus(t.status) === "progress").length,
-    done: tickets.filter((t) => normalizeStatus(t.status) === "done").length,
-  };
+    const tick = () => loadTickets({ silent: true });
+    pollRef.current = setInterval(tick, 30000);
 
-  const priorityClass = (priority) =>
-    `pill pri-${String(priority || "").toLowerCase()}`;
+    const onFocus = () => tick();
+    window.addEventListener("focus", onFocus);
 
-  const statusPillClass = (st) => `pill st-${normalizeStatus(st)}`;
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [hasLoadedOnce, loadTickets]);
 
-  const statusLabel = (s) => {
-    const st = normalizeStatus(s);
-    if (st === "review") return "Ditinjau";
-    if (st === "progress") return "Sedang Diproses";
-    if (st === "done") return "Selesai";
-    return "Terbuka";
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return tickets;
+
+    return tickets.filter((t) => {
+      const id = String(t?.code_ticket ?? t?.id_ticket ?? "").toLowerCase();
+      const title = String(t?.title ?? t?.subject ?? "").toLowerCase();
+      const category = String(t?.category ?? t?.category_name ?? "").toLowerCase();
+      return id.includes(q) || title.includes(q) || category.includes(q);
+    });
+  }, [tickets, query]);
+
+  const stats = useMemo(() => {
+    const s = { open: 0, review: 0, progress: 0, done: 0 };
+    for (const t of tickets) {
+      const k = normalizeStatus(t?.status);
+      s[k] += 1;
+    }
+    return s;
+  }, [tickets]);
 
   const doneTickets = useMemo(() => {
     return tickets
       .filter((t) => normalizeStatus(t.status) === "done")
       .sort((a, b) => {
         const da = new Date(
-          a?.resolved_at ??
-            a?.resolution_date ??
-            a?.closed_at ??
-            a?.updated_at ??
-            0
+          a?.resolved_at ?? a?.resolution_date ?? a?.closed_at ?? a?.updated_at ?? 0
         ).getTime();
         const db = new Date(
-          b?.resolved_at ??
-            b?.resolution_date ??
-            b?.closed_at ??
-            b?.updated_at ??
-            0
+          b?.resolved_at ?? b?.resolution_date ?? b?.closed_at ?? b?.updated_at ?? 0
         ).getTime();
         return db - da;
       });
@@ -245,61 +273,58 @@ export default function UserDashboard() {
 
   const notifItems = useMemo(() => {
     return doneTickets.slice(0, 8).map((t) => ({
-      id: getId(t),
-      title: getTitle(t),
+      id: ticketId(t),
+      title: ticketTitle(t),
       resolvedAt: resolvedLabel(t),
       ticket: t,
     }));
   }, [doneTickets]);
 
-  const openTicketModal = async (ticket) => {
+  const openTicketModal = useCallback(async (ticket) => {
     setSelectedTicket(ticket);
 
-    const idTicket = getRealId(ticket);
+    const idTicket = ticketRealId(ticket);
     if (!idTicket) return;
 
     try {
       setDetailLoading(true);
       const res = await fetchUserTicketDetail(idTicket);
       const detail = res?.data ?? res;
-      const merged = { ...ticket, ...detail };
-      setSelectedTicket(merged);
+      setSelectedTicket((prev) => ({ ...(prev || ticket), ...detail }));
     } catch (err) {
       console.error(err);
     } finally {
       setDetailLoading(false);
     }
-  };
+  }, []);
 
-  const onClickNotifItem = (item) => {
-    const idTicket = getRealId(item.ticket);
-    setNotifOpen(false);
+  const onClickNotifItem = useCallback(
+    (item) => {
+      const idTicket = ticketRealId(item.ticket);
+      setNotifOpen(false);
+      if (!idTicket) return;
+      navigate(`/user/tickets?open=${encodeURIComponent(idTicket)}`);
+    },
+    [navigate]
+  );
 
-    if (!idTicket) return;
-
-    navigate(`/user/tickets?open=${encodeURIComponent(idTicket)}`);
-  };
-
-  const openSidebar = () => setSidebarOpen(true);
-  const closeSidebar = () => setSidebarOpen(false);
-
-  const attachments = getAttachments(selectedTicket)
-    .map(normalizeAttachment)
-    .filter(Boolean);
+  const attachments = useMemo(() => {
+    return getAttachments(selectedTicket).map(normalizeAttachment).filter(Boolean);
+  }, [selectedTicket]);
 
   return (
     <div className="user-page">
       <UserSidebar
         active="dashboard"
         mobileOpen={sidebarOpen}
-        onClose={closeSidebar}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="user-main">
         <div className="user-mobilebar">
           <button
             className="user-hamburger"
-            onClick={openSidebar}
+            onClick={() => setSidebarOpen(true)}
             aria-label="Buka menu"
           >
             <span />
@@ -330,21 +355,27 @@ export default function UserDashboard() {
 
         <div className="user-stats">
           <div className="user-stat-card">
-            <div className="user-stat-icon icon-open">📩</div>
+            <div className="user-stat-icon icon-open">
+              <Inbox size={18} strokeWidth={1.9} />
+            </div>
             <div className="user-stat-title">Tiket Terbuka</div>
             <div className="user-stat-sub">Menunggu respons</div>
             <div className="user-stat-foot">{stats.open} tiket</div>
           </div>
 
           <div className="user-stat-card">
-            <div className="user-stat-icon icon-progress">⏳</div>
+            <div className="user-stat-icon icon-progress">
+              <Timer size={18} strokeWidth={1.9} />
+            </div>
             <div className="user-stat-title">Sedang Diproses</div>
             <div className="user-stat-sub">Sedang ditangani</div>
             <div className="user-stat-foot">{stats.progress} tiket</div>
           </div>
 
           <div className="user-stat-card">
-            <div className="user-stat-icon icon-done">✅</div>
+            <div className="user-stat-icon icon-done">
+              <CheckCircle2 size={18} strokeWidth={1.9} />
+            </div>
             <div className="user-stat-title">Selesai</div>
             <div className="user-stat-sub">Tiket telah selesai</div>
             <div className="user-stat-foot">{stats.done} tiket</div>
@@ -361,10 +392,12 @@ export default function UserDashboard() {
               className="needhelp-btn"
               onClick={() => navigate("/user/tickets/create")}
             >
-              + Buat Tiket Baru
+              Buat Tiket Baru
             </button>
           </div>
-          <div className="needhelp-icon">🎫</div>
+          <div className="needhelp-icon">
+            <Ticket size={22} strokeWidth={1.9} />
+          </div>
         </section>
 
         <section className="recent-card">
@@ -373,10 +406,7 @@ export default function UserDashboard() {
               <div className="recent-title">Tiket Terbaru</div>
               <div className="recent-sub">Permintaan bantuan terbaru Anda</div>
             </div>
-            <button
-              className="recent-viewall"
-              onClick={() => navigate("/user/tickets")}
-            >
+            <button className="recent-viewall" onClick={() => navigate("/user/tickets")}>
               Lihat Semua
             </button>
           </div>
@@ -396,7 +426,7 @@ export default function UserDashboard() {
               </thead>
 
               <tbody>
-                {loadingTickets ? (
+                {!hasLoadedOnce ? (
                   <tr>
                     <td colSpan="7" className="empty-row">
                       Memuat tiket...
@@ -410,8 +440,8 @@ export default function UserDashboard() {
                   </tr>
                 ) : (
                   filtered.slice(0, 10).map((t) => {
-                    const id = getId(t);
-                    const title = getTitle(t);
+                    const id = ticketId(t);
+                    const title = ticketTitle(t);
                     const category = t?.category ?? t?.category_name ?? "-";
                     const priority = t?.priority ?? "LOW";
                     const updated = updatedLabel(t);
@@ -422,21 +452,18 @@ export default function UserDashboard() {
                         <td>{title}</td>
                         <td>{category}</td>
                         <td>
-                          <span className={priorityClass(priority)}>
+                          <span className={pillPriority(priority)}>
                             {String(priority).toUpperCase()}
                           </span>
                         </td>
                         <td>
-                          <span className={statusPillClass(t.status)}>
+                          <span className={pillStatus(t.status)}>
                             {statusLabel(t.status)}
                           </span>
                         </td>
                         <td>{updated}</td>
                         <td>
-                          <button
-                            className="view-btn"
-                            onClick={() => openTicketModal(t)}
-                          >
+                          <button className="view-btn" onClick={() => openTicketModal(t)}>
                             Lihat
                           </button>
                         </td>
@@ -449,42 +476,49 @@ export default function UserDashboard() {
           </div>
         </section>
 
-        <section className="info-grid">
-          <div className="info-card">
-            <div className="info-icon info-blue">💬</div>
-            <div className="info-title">FAQ</div>
-            <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
-            <button className="info-link-btn" onClick={() => setOpenFaq(true)}>
-              Lihat FAQ →
-            </button>
-          </div>
+       <section className="info-grid">
+  <button
+    type="button"
+    className="info-card info-card-clickable"
+    onClick={() => setOpenFaq(true)}
+    aria-label="Buka FAQ"
+  >
+    <div className="info-icon info-blue">
+      <MessageCircleQuestion size={18} strokeWidth={1.9} />
+    </div>
+    <div className="info-title">FAQ</div>
+    <div className="info-sub">Temukan jawaban dari pertanyaan umum</div>
+    <div className="info-link-btn">Lihat FAQ</div>
+  </button>
 
-          <div className="info-card">
-            <div className="info-icon info-green">🗓️</div>
-            <div className="info-title">Jam Layanan</div>
-            <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
-            <button
-              className="info-link-btn"
-              onClick={() => setOpenServiceHours(true)}
-            >
-              Lihat Jadwal →
-            </button>
-          </div>
+  <button
+    type="button"
+    className="info-card info-card-clickable"
+    onClick={() => setOpenServiceHours(true)}
+    aria-label="Buka Jam Layanan"
+  >
+    <div className="info-icon info-green">
+      <CalendarClock size={18} strokeWidth={1.9} />
+    </div>
+    <div className="info-title">Jam Layanan</div>
+    <div className="info-sub">Senin - Jumat: 08.00 - 15.00</div>
+    <div className="info-link-btn">Lihat Jadwal</div>
+  </button>
 
-          <div className="info-card">
-            <div className="info-icon info-purple">📘</div>
-            <div className="info-title">Cara Kerja</div>
-            <div className="info-sub">
-              Pahami bagaimana tiket Anda diproses langkah demi langkah
-            </div>
-            <button
-              className="info-link-btn"
-              onClick={() => setOpenHowItWorks(true)}
-            >
-              Lihat Panduan →
-            </button>
-          </div>
-        </section>
+  <button
+    type="button"
+    className="info-card info-card-clickable"
+    onClick={() => setOpenHowItWorks(true)}
+    aria-label="Buka Cara Kerja"
+  >
+    <div className="info-icon info-purple">
+      <BookOpenText size={18} strokeWidth={1.9} />
+    </div>
+    <div className="info-title">Cara Kerja</div>
+    <div className="info-sub">Pahami bagaimana tiket diproses langkah demi langkah</div>
+    <div className="info-link-btn">Lihat Panduan</div>
+  </button>
+</section>
       </main>
 
       <UserFAQ mode="modal" open={openFaq} onClose={() => setOpenFaq(false)} />
@@ -517,9 +551,7 @@ export default function UserDashboard() {
             <div className="modal-body">
               <div className="modal-row">
                 <span>Judul</span>
-                <strong>
-                  {selectedTicket.title ?? selectedTicket.subject ?? "-"}
-                </strong>
+                <strong>{selectedTicket.title ?? selectedTicket.subject ?? "-"}</strong>
               </div>
 
               <div className="modal-row">
@@ -530,9 +562,7 @@ export default function UserDashboard() {
               <div className="modal-row">
                 <span>Prioritas</span>
                 <strong>
-                  <span
-                    className={priorityClass(selectedTicket.priority ?? "LOW")}
-                  >
+                  <span className={pillPriority(selectedTicket.priority ?? "LOW")}>
                     {String(selectedTicket.priority ?? "LOW").toUpperCase()}
                   </span>
                 </strong>
@@ -541,7 +571,7 @@ export default function UserDashboard() {
               <div className="modal-row">
                 <span>Status</span>
                 <strong>
-                  <span className={statusPillClass(selectedTicket.status)}>
+                  <span className={pillStatus(selectedTicket.status)}>
                     {statusLabel(selectedTicket.status)}
                   </span>
                 </strong>

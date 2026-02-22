@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Camera,
+  CheckCircle2,
+  Clock,
+  Tickets,
+  Circle,
+} from "lucide-react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-profile.css";
 import { fetchUserTickets } from "../services/tickets";
@@ -70,7 +77,7 @@ export default function UserProfile() {
   };
 
   useEffect(() => {
-    (async () => {
+    const run = async () => {
       try {
         setStatsLoading(true);
         setStatsError("");
@@ -91,9 +98,7 @@ export default function UserProfile() {
 
         setTotalTickets(total);
         setActiveTickets(active);
-
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-        setResolvedRate(pct);
+        setResolvedRate(total > 0 ? Math.round((done / total) * 100) : 0);
       } catch (err) {
         setStatsError(err?.response?.data?.message || "Gagal mengambil statistik tiket.");
         setTotalTickets(0);
@@ -102,12 +107,17 @@ export default function UserProfile() {
       } finally {
         setStatsLoading(false);
       }
-    })();
+    };
+
+    run();
   }, []);
 
   useEffect(() => {
     setAvatarPreview(resolveAvatar(userData.avatar || userData.avatar_url));
   }, [userData]);
+
+  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false);
 
   const handleChangePhotoClick = () => {
     fileInputRef.current?.click();
@@ -124,8 +134,7 @@ export default function UserProfile() {
       const res = await uploadAvatar(file);
 
       const updatedUser =
-        res?.data?.user ||
-        {
+        res?.data?.user || {
           ...userData,
           avatar: res?.data?.avatar || res?.data?.avatar_url || userData.avatar,
         };
@@ -133,16 +142,15 @@ export default function UserProfile() {
       localStorage.setItem("user", JSON.stringify(updatedUser));
       setUserData(updatedUser);
     } catch (err) {
-      setStatsError(err?.response?.data?.message || "Upload foto gagal. Cek endpoint/izin akses.");
+      setStatsError(
+        err?.response?.data?.message || "Upload foto gagal. Cek endpoint/izin akses."
+      );
       setAvatarPreview(resolveAvatar(userData.avatar || userData.avatar_url));
     } finally {
       e.target.value = "";
       URL.revokeObjectURL(localPreview);
     }
   };
-
-  const openSidebar = () => setSidebarOpen(true);
-  const closeSidebar = () => setSidebarOpen(false);
 
   const roleLabel = role ? (role === "admin" ? "Admin" : "Pengguna") : "-";
   const showUserType = userTypeLabel !== "-";
@@ -170,7 +178,7 @@ export default function UserProfile() {
           <p className="up-header-sub">Kelola informasi dan akun Anda.</p>
         </header>
 
-        {statsError && <div className="up-alert up-alert-error">{statsError}</div>}
+        {!!statsError && <div className="up-alert up-alert-error">{statsError}</div>}
 
         <div className="up-wrapper">
           <section className="up-hero">
@@ -179,7 +187,11 @@ export default function UserProfile() {
             <div className="up-hero-top">
               <div className="up-hero-left">
                 <div className="up-avatar">
-                  {avatarPreview ? <img src={avatarPreview} alt="Avatar" /> : <span>{initials}</span>}
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" />
+                  ) : (
+                    <span>{initials}</span>
+                  )}
                   <span className="up-online-dot" />
                 </div>
 
@@ -190,7 +202,10 @@ export default function UserProfile() {
                   <div className="up-tags">
                     {showUserType && <span className="up-tag up-tag-soft">{userTypeLabel}</span>}
                     {roleLabel !== "-" && <span className="up-tag up-tag-soft">{roleLabel}</span>}
-                    <span className="up-tag up-tag-live">Aktif</span>
+                    <span className="up-tag up-tag-live">
+                      <Circle size={8} fill="currentColor" strokeWidth={0} />
+                      Aktif
+                    </span>
                   </div>
                 </div>
               </div>
@@ -205,6 +220,7 @@ export default function UserProfile() {
 
               <div className="up-hero-actions">
                 <button className="up-btn up-btn-ghost" type="button" onClick={handleChangePhotoClick}>
+                  <Camera size={16} strokeWidth={2} />
                   Ganti Foto
                 </button>
               </div>
@@ -212,7 +228,9 @@ export default function UserProfile() {
 
             <div className="up-metrics">
               <div className="up-metric">
-                <div className="up-metric-icon up-i-green">🧾</div>
+                <div className="up-metric-icon up-i-green">
+                  <Tickets size={18} strokeWidth={2} />
+                </div>
                 <div className="up-metric-meta">
                   <div className="up-metric-value">{statsLoading ? "…" : totalTickets}</div>
                   <div className="up-metric-label">Total Tiket</div>
@@ -220,7 +238,9 @@ export default function UserProfile() {
               </div>
 
               <div className="up-metric">
-                <div className="up-metric-icon up-i-amber">⏳</div>
+                <div className="up-metric-icon up-i-amber">
+                  <Clock size={18} strokeWidth={2} />
+                </div>
                 <div className="up-metric-meta">
                   <div className="up-metric-value">{statsLoading ? "…" : activeTickets}</div>
                   <div className="up-metric-label">Tiket Aktif</div>
@@ -228,9 +248,13 @@ export default function UserProfile() {
               </div>
 
               <div className="up-metric up-metric-wide">
-                <div className="up-metric-icon up-i-blue">✅</div>
+                <div className="up-metric-icon up-i-blue">
+                  <CheckCircle2 size={18} strokeWidth={2} />
+                </div>
                 <div className="up-metric-meta">
-                  <div className="up-metric-value">{statsLoading ? "…" : `${resolvedRate}%`}</div>
+                  <div className="up-metric-value">
+                    {statsLoading ? "…" : `${resolvedRate}%`}
+                  </div>
                   <div className="up-metric-label">Tingkat Penyelesaian</div>
 
                   <div className="up-progress">
@@ -238,7 +262,7 @@ export default function UserProfile() {
                   </div>
 
                   <div className="up-progress-sub">
-                    {statsLoading ? "Menghitung statistik..." : "Semakin tinggi, semakin cepat tiket selesai"}
+                    {statsLoading ? "Menghitung statistik..." : "Semakin tinggi, semakin banyak tiket selesai"}
                   </div>
                 </div>
               </div>
@@ -251,6 +275,7 @@ export default function UserProfile() {
                 <div className="up-section-title">Informasi Pribadi</div>
                 <div className="up-section-sub">Data ini bersifat read-only untuk keamanan.</div>
               </div>
+
               <div className="up-chip">
                 <span className="up-chip-dot" />
                 Terverifikasi

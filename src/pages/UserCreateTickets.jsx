@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Plus, Paperclip, UploadCloud } from "lucide-react";
 import UserSidebar from "../components/user/UserSidebar";
 import "../styles/user-create-ticket.css";
 import { createUserTicket } from "../services/tickets";
@@ -27,10 +28,15 @@ export default function UserCreateTicket() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const openSidebar = () => setSidebarOpen(true);
+  const closeSidebar = () => setSidebarOpen(false);
+
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    setAttachment(file || null);
+    const file = e.target.files?.[0] || null;
+    setAttachment(file);
   };
+
+  const handleCancel = () => navigate("/user/tickets");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,35 +61,27 @@ export default function UserCreateTicket() {
       formData.append("priority", priority);
       formData.append("description", cleanDesc);
 
-      if (attachment) {
-        formData.append("files[]", attachment);
-      }
+      if (attachment) formData.append("files[]", attachment);
 
       await createUserTicket(formData);
 
       setSuccessMsg("Tiket berhasil dibuat.");
-
       setTitle("");
       setCategory("");
       setPriority("");
       setDescription("");
       setAttachment(null);
 
-      setTimeout(() => {
-        navigate("/user/tickets");
-      }, 800);
+      setTimeout(() => navigate("/user/tickets"), 700);
     } catch (err) {
       console.error(err);
-      setErrorMsg(err?.response?.data?.message || "Gagal mengirim tiket ke server.");
+      setErrorMsg(
+        err?.response?.data?.message || "Gagal mengirim tiket ke server."
+      );
     } finally {
       setSubmitting(false);
     }
   };
-
-  const handleCancel = () => navigate("/user/tickets");
-
-  const openSidebar = () => setSidebarOpen(true);
-  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <div className="user-page">
@@ -95,11 +93,7 @@ export default function UserCreateTicket() {
 
       <main className="user-main uct-main">
         <div className="uct-mobilebar">
-          <button
-            className="uct-hamburger"
-            onClick={openSidebar}
-            aria-label="Buka menu"
-          >
+          <button className="uct-hamburger" onClick={openSidebar} aria-label="Buka menu">
             <span />
             <span />
             <span />
@@ -119,17 +113,20 @@ export default function UserCreateTicket() {
         <div className="uct-wrapper">
           <section className="uct-card">
             <div className="uct-card-header">
-              <div className="uct-icon-circle">➕</div>
+              <div className="uct-icon-circle" aria-hidden="true">
+                <Plus size={18} strokeWidth={2} />
+              </div>
+
               <div>
                 <div className="uct-card-title">Buat Tiket Bantuan</div>
                 <div className="uct-card-sub">
-                  Isi formulir di bawah ini untuk mengajukan permintaan bantuan
+                  Isi formulir di bawah ini untuk mengajukan permintaan bantuan.
                 </div>
               </div>
             </div>
 
-            {errorMsg && <div className="uct-alert error">{errorMsg}</div>}
-            {successMsg && <div className="uct-alert success">{successMsg}</div>}
+            {!!errorMsg && <div className="uct-alert error">{errorMsg}</div>}
+            {!!successMsg && <div className="uct-alert success">{successMsg}</div>}
 
             <form className="uct-form" onSubmit={handleSubmit}>
               <div className="uct-form-group">
@@ -202,8 +199,7 @@ export default function UserCreateTicket() {
                 />
 
                 <div className="uct-hint">
-                  Semakin detail informasi yang Anda berikan, semakin cepat kami dapat
-                  menyelesaikan masalah Anda.
+                  Semakin detail informasi yang Anda berikan, semakin cepat tim kami memahami konteks masalahnya.
                 </div>
               </div>
 
@@ -218,7 +214,13 @@ export default function UserCreateTicket() {
                     accept=".png,.jpg,.jpeg,.pdf"
                   />
 
-                  <div className="uct-upload-icon">📎</div>
+                  <div className="uct-upload-icon" aria-hidden="true">
+                    {attachment ? (
+                      <Paperclip size={18} strokeWidth={2} />
+                    ) : (
+                      <UploadCloud size={18} strokeWidth={2} />
+                    )}
+                  </div>
 
                   <div className="uct-upload-text">
                     <div className={`uct-upload-name ${attachment ? "has" : ""}`}>

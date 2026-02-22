@@ -176,9 +176,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="auth-bottom-box">
-            Belum punya akun? <Link to="/register">Daftar di sini</Link>
-          </div>
+          <Link className="auth-bottom-box" to="/register">
+            Belum punya akun? <span>Daftar di sini</span>
+          </Link>
         </div>
       </div>
     </div>

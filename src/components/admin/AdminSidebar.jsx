@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import { LogOut, X } from "lucide-react";
 
 export default function AdminSidebar({
   active = "overview",
@@ -79,29 +80,30 @@ export default function AdminSidebar({
 
       {mobileOpen && <div className="sidebar-backdrop" onClick={onClose} />}
 
-      {showConfirm && (
-        <div className="logout-modal-overlay">
-          <div className="logout-modal">
-            <h3 className="logout-title">Konfirmasi Logout</h3>
-            <p className="logout-text">
-              Apakah Anda yakin ingin logout dari akun admin?
-            </p>
+       {showConfirm && (
+  <div className="logout-modal-overlay" onClick={() => setShowConfirm(false)}>
+    <div className="logout-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="logout-modal-icon">
+        <LogOut size={22} strokeWidth={2} />
+      </div>
 
-            <div className="logout-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowConfirm(false)}
-              >
-                Batal
-              </button>
+      <h3 className="logout-title">Keluar dari Akun?</h3>
+      <p className="logout-text">
+        Anda akan keluar dari sesi saat ini dan perlu login kembali.
+      </p>
 
-              <button className="btn-logout" onClick={doLogout}>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="logout-actions">
+        <button className="btn-cancel" onClick={() => setShowConfirm(false)}>
+          Batal
+        </button>
+        <button className="btn-logout" onClick={doLogout}>
+          <LogOut size={16} strokeWidth={2} />
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }

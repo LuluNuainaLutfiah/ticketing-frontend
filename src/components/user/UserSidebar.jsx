@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import { LogOut, X } from "lucide-react";
 
 export default function UserSidebar({ active = "dashboard", mobileOpen = false, onClose }) {
   const navigate = useNavigate();
@@ -100,22 +101,29 @@ export default function UserSidebar({ active = "dashboard", mobileOpen = false, 
       </aside>
 
       {showConfirm && (
-        <div className="logout-modal-overlay" onClick={() => setShowConfirm(false)}>
-          <div className="logout-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="logout-title">Konfirmasi Logout</h3>
-            <p className="logout-text">Apakah Anda yakin ingin keluar dari aplikasi?</p>
+  <div className="logout-modal-overlay" onClick={() => setShowConfirm(false)}>
+    <div className="logout-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="logout-modal-icon">
+        <LogOut size={22} strokeWidth={2} />
+      </div>
 
-            <div className="logout-actions">
-              <button className="btn-cancel" onClick={() => setShowConfirm(false)}>
-                Batal
-              </button>
-              <button className="btn-logout" onClick={doLogout}>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <h3 className="logout-title">Keluar dari Akun?</h3>
+      <p className="logout-text">
+        Anda akan keluar dari sesi saat ini dan perlu login kembali.
+      </p>
+
+      <div className="logout-actions">
+        <button className="btn-cancel" onClick={() => setShowConfirm(false)}>
+          Batal
+        </button>
+        <button className="btn-logout" onClick={doLogout}>
+          <LogOut size={16} strokeWidth={2} />
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }

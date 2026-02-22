@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Bell, Menu, Search } from "lucide-react";
 
 export default function AdminNavbar({
   query,
@@ -15,27 +16,53 @@ export default function AdminNavbar({
 
   const notifCount = useMemo(() => notifItems.length, [notifItems]);
 
+  const closeNotif = useCallback(() => setOpenNotif(false), []);
+  const toggleNotif = useCallback(() => setOpenNotif((v) => !v), []);
+
   useEffect(() => {
-    const handleClickOutside = (e) => {
+    const onDocDown = (e) => {
       if (!notifRef.current) return;
-      if (!notifRef.current.contains(e.target)) setOpenNotif(false);
+      if (notifRef.current.contains(e.target)) return;
+      closeNotif();
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+    document.addEventListener("mousedown", onDocDown);
+    return () => document.removeEventListener("mousedown", onDocDown);
+  }, [closeNotif]);
 
   const formatTime = (raw) => {
     if (!raw) return "";
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString("id-ID", {
+
+    return new Intl.DateTimeFormat("id-ID", {
+      timeZone: "Asia/Jakarta",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    });
+      hour12: false,
+    }).format(d);
   };
+
+  const goTickets = () => {
+    closeNotif();
+    navigate("/admin/tickets");
+  };
+
+  const openTicket = (id) => {
+    closeNotif();
+    navigate(`/admin/tickets?open=${encodeURIComponent(id)}`);
+  };
+
+  const initials = useMemo(() => {
+    const name = String(user?.name || "Admin").trim();
+    const parts = name.split(" ").filter(Boolean);
+    const first = parts[0]?.[0] || "A";
+    const second = parts[1]?.[0] || "";
+    return (first + second).toUpperCase();
+  }, [user]);
 
   return (
     <header className="admin-navbar">
@@ -55,10 +82,13 @@ export default function AdminNavbar({
           onClick={() => onToggleSidebar?.()}
           aria-label="Buka menu"
         >
-          ☰
+          <Menu size={18} strokeWidth={2} />
         </button>
 
         <div className="admin-search-wrap">
+          <span className="admin-search-icon" aria-hidden="true">
+          </span>
+
           <input
             className="admin-search-input"
             placeholder="Cari tiket..."
@@ -71,12 +101,15 @@ export default function AdminNavbar({
           <button
             type="button"
             className="admin-notif-btn"
-            onClick={() => setOpenNotif((p) => !p)}
-            aria-label="Notifikasi"
+            onClick={toggleNotif}
+            aria-label="Notifikasi tiket"
+            title="Notifikasi"
           >
-            <span className="admin-notif-bell">🔔</span>
+            <Bell size={18} strokeWidth={2} />
             {notifCount > 0 && (
-              <span className="admin-notif-badge">{notifCount}</span>
+              <span className="admin-notif-badge">
+                {notifCount > 99 ? "99+" : notifCount}
+              </span>
             )}
           </button>
 
@@ -85,23 +118,22 @@ export default function AdminNavbar({
               <div className="admin-notif-panel-head">
                 <div className="admin-notif-panel-title">Notifikasi</div>
                 <div className="admin-notif-panel-sub">
-                  {notifCount} tiket masih TERBUKA
+                  {notifCount} tiket butuh perhatian
                 </div>
               </div>
 
               <div className="admin-notif-panel-list">
                 {notifCount === 0 ? (
-                  <div className="admin-notif-empty">Tidak ada notifikasi 🎉</div>
+                  <div className="admin-notif-empty">
+                    Tidak ada notifikasi.
+                  </div>
                 ) : (
                   notifItems.slice(0, 8).map((n) => (
                     <button
                       key={n.id}
                       type="button"
                       className="admin-notif-item"
-                      onClick={() => {
-                        setOpenNotif(false);
-                        navigate("/admin/tickets");
-                      }}
+                      onClick={() => openTicket(n.id)}
                     >
                       <div className="admin-notif-item-top">
                         <div className="admin-notif-id">{n.id}</div>
@@ -113,7 +145,9 @@ export default function AdminNavbar({
                           {n.priority}
                         </div>
                       </div>
+
                       <div className="admin-notif-msg">{n.title}</div>
+
                       <div className="admin-notif-time">
                         {formatTime(n.createdAt || n.created_at)}
                       </div>
@@ -125,21 +159,16 @@ export default function AdminNavbar({
               <button
                 type="button"
                 className="admin-notif-panel-foot"
-                onClick={() => {
-                  setOpenNotif(false);
-                  navigate("/admin/tickets");
-                }}
+                onClick={goTickets}
               >
-                Lihat semua tiket →
+                Lihat semua tiket
               </button>
             </div>
           )}
         </div>
 
-        <div className="admin-user-mini">
-          <div className="admin-user-avatar">
-            {(user?.name || "A")[0].toUpperCase()}
-          </div>
+        <div className="admin-user-mini" title={user?.name || "Admin"}>
+          <div className="admin-user-avatar">{initials}</div>
         </div>
       </div>
     </header>
